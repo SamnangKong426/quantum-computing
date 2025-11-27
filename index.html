@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IBM-Style Quantum Composer (CNOT + Barrier)</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .wire {
+      width: 100%;
+      height: 2px;
+      background-color: #d0d6e4;
+      position: absolute;
+      top: 50%;
+      left: 0;
+      z-index: 1;
+    }
+
+    .cell {
+      width: 70px;
+      height: 70px;
+      border: 1px solid #c7d2e3;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      position: relative;
+      z-index: 2;
+      user-select: none;
+    }
+
+    .gate-box {
+      background: #2563eb;
+      color: white;
+      width: 45px;
+      height: 45px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .cx-line {
+      position: absolute;
+      width: 4px;
+      background: #2563eb;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 0;
+      border-radius: 2px;
+    }
+
+    .full-barrier {
+      position: absolute;
+      width: 6px;
+      border-left: 3px dashed #6b7280;
+      border-right: 3px dashed #6b7280;
+      z-index: 10;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-6">IBM-Style Quantum Composer</h1>
+
+<div class="flex gap-3 mb-6">
+  <button onclick="addQubit()" class="px-4 py-2 bg-blue-600 text-white rounded">+ Add Qubit</button>
+  <button onclick="removeQubit()" class="px-4 py-2 bg-red-600 text-white rounded">– Remove Qubit</button>
+</div>
+
+<h2 class="text-xl font-semibold mb-3">Gate Palette</h2>
+<div id="gateBox" class="flex gap-4 mb-8">
+  <div class="gate-box gate" draggable="true" data-gate="H">H</div>
+  <div class="gate-box gate" draggable="true" data-gate="X">X</div>
+  <div class="gate-box gate" draggable="true" data-gate="Y">Y</div>
+  <div class="gate-box gate" draggable="true" data-gate="Z">Z</div>
+  <div class="gate-box gate" draggable="true" data-gate="CONTROL">●</div>
+  <div class="gate-box gate" draggable="true" data-gate="TARGET">⊕</div>
+  <div class="gate-box gate" draggable="true" data-gate="BARRIER">||</div>
+  <div class="gate-box gate" draggable="true" data-gate="M">M</div>
+</div>
+
+<div id="circuit" class="space-y-6 relative"></div>
+
+<button onclick="generateQiskit()"
+        class="mt-8 px-4 py-2 bg-green-600 text-white rounded">
+  Generate Qiskit Code
+</button>
+
+<textarea id="qiskitCode"
+          class="mt-4 w-full h-64 p-4 border rounded bg-gray-50 font-mono text-sm"></textarea>
+
+<script>
+let numQubits = 3;
+const numColumns = 12;
+let circuit = [];
+
+// Initial build
+buildCircuit();
+
+function buildCircuit() {
+  const container = document.getElementById("circuit");
+  container.innerHTML = "";
+
+  if (circuit.length < numQubits) {
+    for (let i = circuit.length; i < numQubits; i++)
+      circuit.push(Array(numColumns).fill(""));
+  }
+
+  for (let q = 0; q < numQubits; q++) {
+    const row = document.createElement("div");
+    row.className = "relative flex items-center gap-4";
+
+    const label = document.createElement("div");
+    label.className = "font-semibold w-10";
+    label.textContent = `q${q}`;
+    row.appendChild(label);
+
+    const wire = document.createElement("div");
+    wire.className = "wire";
+    row.appendChild(wire);
+
+    for (let c = 0; c < numColumns; c++) {
+      const val = circuit[q][c];
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.row = q;
+      cell.dataset.col = c;
+      cell.dataset.gate = val;
+      cell.draggable = true;
+
+      if (val !== "" && val !== "BARRIER") {
+        const gateDiv = document.createElement("div");
+        gateDiv.className = "gate-box";
+        if (val === "CONTROL") gateDiv.textContent = "●";
+        else if (val === "TARGET") gateDiv.textContent = "⊕";
+        else gateDiv.textContent = val;
+        cell.appendChild(gateDiv);
+      }
+
+      cell.addEventListener("dragstart", dragFromCell);
+      cell.addEventListener("dragover", e => e.preventDefault());
+      cell.addEventListener("drop", dropGate);
+
+      row.appendChild(cell);
+    }
+
+    container.appendChild(row);
+  }
+
+  drawCNOTLines();
+  drawBarriers();
+}
+
+function drawCNOTLines() {
+  document.querySelectorAll(".cx-line").forEach(el => el.remove());
+
+  for (let col = 0; col < numColumns; col++) {
+    let controls = [];
+    let targets = [];
+
+    for (let r = 0; r < numQubits; r++) {
+      if (circuit[r][col] === "CONTROL") controls.push(r);
+      if (circuit[r][col] === "TARGET") targets.push(r);
+    }
+
+    if (controls.length === 1 && targets.length === 1) {
+      let [c, t] = [controls[0], targets[0]];
+      let top = Math.min(c, t);
+      let bottom = Math.max(c, t);
+
+      let topCell = document.querySelector(`[data-row="${top}"][data-col="${col}"]`);
+      let bottomCell = document.querySelector(`[data-row="${bottom}"][data-col="${col}"]`);
+
+      const line = document.createElement("div");
+      line.className = "cx-line";
+      line.style.top = (topCell.offsetTop + 35) + "px";
+      line.style.height = ((bottomCell.offsetTop + 35) - (topCell.offsetTop + 35)) + "px";
+      line.style.left = (topCell.offsetLeft + 35) + "px";
+
+      document.getElementById("circuit").appendChild(line);
+    }
+  }
+}
+
+function drawBarriers() {
+  document.querySelectorAll(".full-barrier").forEach(b => b.remove());
+
+  for (let col = 0; col < numColumns; col++) {
+    let hasBarrier = false;
+    for (let row = 0; row < numQubits; row++) {
+      if (circuit[row][col] === "BARRIER") {
+        hasBarrier = true;
+        break;
+      }
+    }
+
+    if (hasBarrier) {
+      const topCell = document.querySelector(`[data-row="0"][data-col="${col}"]`);
+      const bottomCell = document.querySelector(`[data-row="${numQubits - 1}"][data-col="${col}"]`);
+
+      const barrierLine = document.createElement("div");
+      barrierLine.className = "full-barrier";
+      barrierLine.style.top = topCell.offsetTop + "px";
+      barrierLine.style.height = (bottomCell.offsetTop + 70 - topCell.offsetTop) + "px";
+      barrierLine.style.left = (topCell.offsetLeft + 35) + "px";
+
+      document.getElementById("circuit").appendChild(barrierLine);
+    }
+  }
+}
+
+// Drag from palette
+document.querySelectorAll(".gate").forEach(g => {
+  g.addEventListener("dragstart", e => {
+    e.dataTransfer.setData("source", "palette");
+    e.dataTransfer.setData("gate", e.target.dataset.gate);
+  });
+});
+
+// Drag from cell
+function dragFromCell(e) {
+  const g = e.target.dataset.gate;
+  if (!g) return;
+  e.dataTransfer.setData("source", "cell");
+  e.dataTransfer.setData("gate", g);
+  e.dataTransfer.setData("row", e.target.dataset.row);
+  e.dataTransfer.setData("col", e.target.dataset.col);
+}
+
+// Drop handler
+function dropGate(e) {
+  e.preventDefault();
+  const src = e.dataTransfer.getData("source");
+  const gate = e.dataTransfer.getData("gate");
+
+  const r = e.target.dataset.row;
+  const c = e.target.dataset.col;
+
+  if (src === "cell") {
+    const oldR = e.dataTransfer.getData("row");
+    const oldC = e.dataTransfer.getData("col");
+    circuit[oldR][oldC] = "";
+  }
+
+  circuit[r][c] = gate;
+  buildCircuit();
+}
+
+// Generate Qiskit
+function generateQiskit() {
+  let code = `from qiskit import QuantumCircuit\nqc = QuantumCircuit(${numQubits}, ${numQubits})\n\n`;
+
+  for (let col = 0; col < numColumns; col++) {
+    // Barrier first
+    if (circuit.some(row => row[col] === "BARRIER")) {
+      code += `qc.barrier(range(${numQubits}))\n`;
+      continue;
+    }
+
+    let control = null;
+    let target = null;
+
+    for (let row = 0; row < numQubits; row++) {
+      let g = circuit[row][col];
+
+      if (g === "CONTROL") control = row;
+      if (g === "TARGET") target = row;
+
+      if (g === "H") code += `qc.h(${row})\n`;
+      if (g === "X") code += `qc.x(${row})\n`;
+      if (g === "Y") code += `qc.y(${row})\n`;
+      if (g === "Z") code += `qc.z(${row})\n`;
+      if (g === "M") code += `qc.measure(${row}, ${row})\n`;
+    }
+
+    if (control !== null && target !== null) {
+      code += `qc.cx(${control}, ${target})\n`;
+    }
+  }
+
+  document.getElementById("qiskitCode").value = code;
+}
+
+// Add/remove qubits
+function addQubit() {
+  numQubits++;
+  circuit.push(Array(numColumns).fill(""));
+  buildCircuit();
+}
+
+function removeQubit() {
+  if (numQubits > 1) {
+    numQubits--;
+    circuit.pop();
+    buildCircuit();
+  }
+}
+
+</script>
+
+</body>
+</html>

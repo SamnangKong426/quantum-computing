@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Circuit Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/9.2.0/blockly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        .scratch-header {
+        .scratch-sidebar {
+            background: #F9F9F9;
+            border-right: 1px solid #E0E0E0;
+        }
+        .scratch-stage {
+            background: white;
+        }
+        .blockly-workspace {
+            background: #F9F9F9 !important;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden bg-white">
+    <!-- Header -->
+    <header class="scratch-header text-white px-4 py-3 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="text-2xl">⚛️</div>
+            <h1 class="text-xl font-bold">Quantum Circuit Builder</h1>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="runSimulation()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg font-semibold transition-colors">
+                ▶ Run
+            </button>
+            <button onclick="clearWorkspace()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition-colors">
+                🗑 Clear
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex h-[calc(100vh-60px)]">
+        <!-- Blocks Palette (Scratch-style sidebar) -->
+        <div class="scratch-sidebar w-64 overflow-y-auto">
+            <div class="p-4">
+                <h2 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Block Categories</h2>
+                <div class="text-xs text-gray-500 mb-4">Drag blocks to build quantum circuits</div>
+            </div>
+        </div>
+
+        <!-- Workspace Area -->
+        <div class="flex-1 flex flex-col">
+            <div class="flex-1 relative">
+                <div id="blocklyDiv" class="absolute inset-0 blockly-workspace"></div>
+            </div>
+        </div>
+
+        <!-- Results Stage (Scratch-style stage) -->
+        <div class="scratch-stage w-[500px] border-l border-gray-300 flex flex-col">
+            <div class="bg-gray-100 px-4 py-3 border-b border-gray-300">
+                <h2 class="font-bold text-gray-700">Results</h2>
+            </div>
+            
+            <div id="resultsArea" class="flex-1 overflow-y-auto p-4">
+                <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                    <div class="text-6xl mb-4">⚛️</div>
+                    <p class="text-center">Build a circuit and click Run<br/>to see quantum results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Visualizations -->
+    <div id="visualModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-4 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Quantum Visualizations</h2>
+                <button onclick="closeModal()" class="text-2xl hover:bg-white hover:bg-opacity-20 rounded px-2">×</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Histogram -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-700 mb-3">📊 Measurement Histogram</h3>
+                        <canvas id="histogramChart"></canvas>
+                    </div>
+                    
+                    <!-- Bloch Spheres -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-700 mb-3">🌐 Bloch Spheres</h3>
+                        <div id="blochContainer" class="grid grid-cols-2 gap-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === BLOCKLY BLOCK DEFINITIONS ===
+        const blockDefinitions = {
+            quantum_circuit: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("⚛️ Quantum Circuit")
+                        .appendField("Qubits:")
+                        .appendField(new Blockly.FieldNumber(2, 1, 10), "QUBITS");
+                    this.appendStatementInput("GATES").appendField("Gates:");
+                    this.setColour("#4C97FF");
+                    this.setTooltip("Create a quantum circuit");
+                }
+            },
+            hadamard_gate: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("H Gate")
+                        .appendField("qubit")
+                        .appendField(new Blockly.FieldNumber(0, 0), "QUBIT");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#9966FF");
+                    this.setTooltip("Hadamard gate - creates superposition");
+                }
+            },
+            pauli_x_gate: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("X Gate (NOT)")
+                        .appendField("qubit")
+                        .appendField(new Blockly.FieldNumber(0, 0), "QUBIT");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#9966FF");
+                    this.setTooltip("Pauli-X gate - flips qubit");
+                }
+            },
+            pauli_y_gate: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Y Gate")
+                        .appendField("qubit")
+                        .appendField(new Blockly.FieldNumber(0, 0), "QUBIT");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#9966FF");
+                }
+            },
+            pauli_z_gate: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Z Gate")
+                        .appendField("qubit")
+                        .appendField(new Blockly.FieldNumber(0, 0), "QUBIT");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#9966FF");
+                }
+            },
+            cnot_gate: {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("CNOT")
+                        .appendField("ctrl:")
+                        .appendField(new Blockly.FieldNumber(0, 0), "CONTROL")
+                        .appendField("tgt:")
+                        .appendField(new Blockly.FieldNumber(1, 0), "TARGET");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#FF6680");
+                }
+            },
+            measure_all: {
+                init: function() {
+                    this.appendDummyInput().appendField("📊 Measure All");
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setColour("#FFAB19");
+                }
+            }
+        };
+
+        // Register blocks
+        Object.keys(blockDefinitions).forEach(name => {
+            Blockly.Blocks[name] = blockDefinitions[name];
+        });
+
+        // === BLOCKLY WORKSPACE ===
+        const workspace = Blockly.inject('blocklyDiv', {
+            toolbox: {
+                kind: 'categoryToolbox',
+                contents: [
+                    {
+                        kind: 'category',
+                        name: 'Circuit',
+                        colour: '#4C97FF',
+                        contents: [{kind: 'block', type: 'quantum_circuit'}]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Single Gates',
+                        colour: '#9966FF',
+                        contents: [
+                            {kind: 'block', type: 'hadamard_gate'},
+                            {kind: 'block', type: 'pauli_x_gate'},
+                            {kind: 'block', type: 'pauli_y_gate'},
+                            {kind: 'block', type: 'pauli_z_gate'}
+                        ]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Two-Qubit',
+                        colour: '#FF6680',
+                        contents: [{kind: 'block', type: 'cnot_gate'}]
+                    },
+                    {
+                        kind: 'category',
+                        name: 'Measurement',
+                        colour: '#FFAB19',
+                        contents: [{kind: 'block', type: 'measure_all'}]
+                    }
+                ]
+            },
+            grid: {spacing: 20, length: 3, colour: '#ddd', snap: true},
+            zoom: {controls: true, wheel: true, startScale: 0.9}
+        });
+
+        // === QUANTUM SIMULATOR ===
+        class QuantumSimulator {
+            constructor(numQubits) {
+                this.numQubits = numQubits;
+                this.numStates = 1 << numQubits;
+                this.state = Array(this.numStates).fill(0).map(() => ({r: 0, i: 0}));
+                this.state[0] = {r: 1, i: 0};
+            }
+
+            applyGate(matrix, qubit) {
+                const newState = Array(this.numStates).fill(0).map(() => ({r: 0, i: 0}));
+                for (let i = 0; i < this.numStates; i++) {
+                    const bit = (i >> qubit) & 1;
+                    const flipped = i ^ (1 << qubit);
+                    const row = bit;
+                    
+                    for (let col = 0; col < 2; col++) {
+                        const idx = col === 0 ? (bit === 0 ? i : flipped) : (bit === 0 ? flipped : i);
+                        const m = matrix[row][col];
+                        const s = this.state[idx];
+                        newState[bit === col ? i : flipped].r += m.r * s.r - m.i * s.i;
+                        newState[bit === col ? i : flipped].i += m.r * s.i + m.i * s.r;
+                    }
+                }
+                this.state = newState;
+            }
+
+            H(q) {
+                const f = 1/Math.sqrt(2);
+                this.applyGate([[{r:f,i:0},{r:f,i:0}],[{r:f,i:0},{r:-f,i:0}]], q);
+            }
+
+            X(q) {
+                for (let i = 0; i < this.numStates; i += 2 << q) {
+                    for (let j = i; j < i + (1 << q); j++) {
+                        [this.state[j], this.state[j + (1 << q)]] = [this.state[j + (1 << q)], this.state[j]];
+                    }
+                }
+            }
+
+            Y(q) {
+                const newState = Array(this.numStates).fill(0).map(() => ({r: 0, i: 0}));
+                for (let i = 0; i < this.numStates; i++) {
+                    const bit = (i >> q) & 1;
+                    const flipped = i ^ (1 << q);
+                    if (bit === 0) {
+                        newState[flipped].r = -this.state[i].i;
+                        newState[flipped].i = this.state[i].r;
+                    } else {
+                        newState[flipped].r = this.state[i].i;
+                        newState[flipped].i = -this.state[i].r;
+                    }
+                }
+                this.state = newState;
+            }
+
+            Z(q) {
+                for (let i = 0; i < this.numStates; i++) {
+                    if ((i >> q) & 1) {
+                        this.state[i].r *= -1;
+                        this.state[i].i *= -1;
+                    }
+                }
+            }
+
+            CNOT(ctrl, tgt) {
+                for (let i = 0; i < this.numStates; i += 2 << Math.max(ctrl, tgt)) {
+                    for (let j = i; j < i + (1 << Math.max(ctrl, tgt)); j++) {
+                        if ((j >> ctrl) & 1) {
+                            const idx1 = j;
+                            const idx2 = j ^ (1 << tgt);
+                            [this.state[idx1], this.state[idx2]] = [this.state[idx2], this.state[idx1]];
+                        }
+                    }
+                }
+            }
+
+            measure(shots = 1000) {
+                const counts = {};
+                for (let shot = 0; shot < shots; shot++) {
+                    let rand = Math.random();
+                    let cumProb = 0;
+                    for (let i = 0; i < this.numStates; i++) {
+                        const prob = this.state[i].r ** 2 + this.state[i].i ** 2;
+                        cumProb += prob;
+                        if (rand < cumProb) {
+                            const outcome = i.toString(2).padStart(this.numQubits, '0');
+                            counts[outcome] = (counts[outcome] || 0) + 1;
+                            break;
+                        }
+                    }
+                }
+                return counts;
+            }
+
+            getStateVector() {
+                return this.state.map((s, i) => ({
+                    label: `|${i.toString(2).padStart(this.numQubits, '0')}⟩`,
+                    prob: s.r ** 2 + s.i ** 2,
+                    amp: s
+                })).filter(s => s.prob > 0.0001);
+            }
+
+            getReducedState(qubit) {
+                const rho = [[{r:0,i:0},{r:0,i:0}],[{r:0,i:0},{r:0,i:0}]];
+                for (let i = 0; i < this.numStates; i++) {
+                    const bi = (i >> qubit) & 1;
+                    for (let j = 0; j < this.numStates; j++) {
+                        const bj = (j >> qubit) & 1;
+                        let match = true;
+                        for (let k = 0; k < this.numQubits; k++) {
+                            if (k !== qubit && ((i >> k) & 1) !== ((j >> k) & 1)) {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if (match) {
+                            const si = this.state[i], sj = this.state[j];
+                            rho[bi][bj].r += si.r * sj.r + si.i * sj.i;
+                            rho[bi][bj].i += si.i * sj.r - si.r * sj.i;
+                        }
+                    }
+                }
+                const alpha = {r: Math.sqrt(Math.max(0, rho[0][0].r)), i: 0};
+                const beta = {r: Math.sqrt(Math.max(0, rho[1][1].r)), i: 0};
+                const norm = Math.sqrt(alpha.r**2 + beta.r**2);
+                if (norm > 0) {
+                    alpha.r /= norm;
+                    beta.r /= norm;
+                }
+                return {alpha, beta};
+            }
+        }
+
+        // === VISUALIZATION ===
+        let chart = null;
+
+        function drawBlochSphere(canvas, alpha, beta, label) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const cx = w/2, cy = h/2, r = 60;
+
+            ctx.clearRect(0, 0, w, h);
+            
+            // Sphere
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2*Math.PI);
+            ctx.stroke();
+            
+            // Equator
+            ctx.strokeStyle = '#9ca3af';
+            ctx.setLineDash([3,3]);
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, r, r*0.3, 0, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Axes
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy-r-10);
+            ctx.lineTo(cx, cy+r+10);
+            ctx.moveTo(cx-r-10, cy);
+            ctx.lineTo(cx+r+10, cy);
+            ctx.stroke();
+            
+            // Labels
+            ctx.fillStyle = '#374151';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillText('|0⟩', cx-10, cy-r-12);
+            ctx.fillText('|1⟩', cx-10, cy+r+18);
+            
+            // State vector
+            const theta = 2 * Math.acos(Math.min(1, Math.sqrt(alpha.r**2 + alpha.i**2)));
+            const phi = Math.atan2(beta.i, beta.r);
+            const x = Math.sin(theta) * Math.cos(phi);
+            const y = Math.sin(theta) * Math.sin(phi);
+            const z = Math.cos(theta);
+            const sx = cx + x*r, sy = cy - z*r - y*r*0.3;
+            
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 5, 0, 2*Math.PI);
+            ctx.fill();
+            
+            // Qubit label
+            ctx.fillStyle = '#1f2937';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(label, 8, 15);
+        }
+
+        function showVisualizations(sim, counts) {
+            const modal = document.getElementById('visualModal');
+            modal.classList.remove('hidden');
+
+            // Histogram
+            const labels = Object.keys(counts).sort();
+            const data = labels.map(l => counts[l]);
+            
+            if (chart) chart.destroy();
+            chart = new Chart(document.getElementById('histogramChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Counts',
+                        data,
+                        backgroundColor: labels.map((_, i) => 
+                            `hsla(${i*360/labels.length}, 70%, 60%, 0.8)`
+                        )
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {legend: {display: false}},
+                    scales: {y: {beginAtZero: true}}
+                }
+            });
+
+            // Bloch Spheres
+            const container = document.getElementById('blochContainer');
+            container.innerHTML = '';
+            for (let q = 0; q < sim.numQubits; q++) {
+                const {alpha, beta} = sim.getReducedState(q);
+                const div = document.createElement('div');
+                div.className = 'bg-white p-2 rounded border';
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = 160;
+                div.appendChild(canvas);
+                container.appendChild(div);
+                drawBlochSphere(canvas, alpha, beta, `Q${q}`);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('visualModal').classList.add('hidden');
+        }
+
+        // === MAIN SIMULATION ===
+        function runSimulation() {
+            const results = document.getElementById('resultsArea');
+            const circuitBlock = workspace.getTopBlocks().find(b => b.type === 'quantum_circuit');
+            
+            if (!circuitBlock) {
+                results.innerHTML = '<div class="p-4 bg-red-100 text-red-700 rounded">Add a Quantum Circuit block first!</div>';
+                return;
+            }
+
+            const numQubits = circuitBlock.getFieldValue('QUBITS');
+            const sim = new QuantumSimulator(numQubits);
+            
+            let html = `<div class="space-y-3">
+                <div class="bg-blue-50 p-3 rounded border-l-4 border-blue-500">
+                    <div class="font-bold text-blue-900">Circuit: ${numQubits} qubits</div>
+                    <div class="text-sm text-blue-700">Initial: |${'0'.repeat(numQubits)}⟩</div>
+                </div>
+                <div class="bg-gray-50 p-3 rounded"><div class="font-bold mb-2">Gates Applied:</div><div class="space-y-1 text-sm">`;
+
+            let block = circuitBlock.getInputTargetBlock('GATES');
+            let hasMeasure = false;
+
+            while (block) {
+                const type = block.type;
+                if (type === 'hadamard_gate') {
+                    const q = parseInt(block.getFieldValue('QUBIT'));
+                    sim.H(q);
+                    html += `<div>✓ H gate on qubit ${q}</div>`;
+                } else if (type === 'pauli_x_gate') {
+                    const q = parseInt(block.getFieldValue('QUBIT'));
+                    sim.X(q);
+                    html += `<div>✓ X gate on qubit ${q}</div>`;
+                } else if (type === 'pauli_y_gate') {
+                    const q = parseInt(block.getFieldValue('QUBIT'));
+                    sim.Y(q);
+                    html += `<div>✓ Y gate on qubit ${q}</div>`;
+                } else if (type === 'pauli_z_gate') {
+                    const q = parseInt(block.getFieldValue('QUBIT'));
+                    sim.Z(q);
+                    html += `<div>✓ Z gate on qubit ${q}</div>`;
+                } else if (type === 'cnot_gate') {
+                    const ctrl = parseInt(block.getFieldValue('CONTROL'));
+                    const tgt = parseInt(block.getFieldValue('TARGET'));
+                    sim.CNOT(ctrl, tgt);
+                    html += `<div>✓ CNOT ctrl=${ctrl} tgt=${tgt}</div>`;
+                } else if (type === 'measure_all') {
+                    hasMeasure = true;
+                    html += `<div>📊 Measure all qubits</div>`;
+                }
+                block = block.getNextBlock();
+            }
+
+            html += `</div></div><div class="bg-purple-50 p-3 rounded border-l-4 border-purple-500">
+                <div class="font-bold text-purple-900 mb-2">Final State:</div><div class="font-mono text-xs space-y-1">`;
+
+            sim.getStateVector().forEach(s => {
+                html += `<div>${s.label}: ${(s.prob*100).toFixed(1)}%</div>`;
+            });
+
+            html += `</div></div>`;
+
+            if (hasMeasure) {
+                const counts = sim.measure(1000);
+                html += `<button onclick="showVisualizations(currentSim, currentCounts)" 
+                    class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg">
+                    📊 Show Visualizations
+                </button>`;
+                window.currentSim = sim;
+                window.currentCounts = counts;
+            }
+
+            html += `</div>`;
+            results.innerHTML = html;
+        }
+
+        function clearWorkspace() {
+            if (confirm('Clear workspace?')) {
+                workspace.clear();
+                document.getElementById('resultsArea').innerHTML = 
+                    '<div class="flex flex-col items-center justify-center h-full text-gray-400"><div class="text-6xl mb-4">🧹</div><p>Workspace cleared</p></div>';
+            }
+        }
+
+        // Load example
+        window.addEventListener('load', () => {
+            const xml = new DOMParser().parseFromString(`
+                <xml><block type="quantum_circuit" x="20" y="20"><field name="QUBITS">2</field>
+                <statement name="GATES"><block type="hadamard_gate"><field name="QUBIT">0</field>
+                <next><block type="cnot_gate"><field name="CONTROL">0</field><field name="TARGET">1</field>
+                <next><block type="measure_all"></block></next></block></next></block></statement></block></xml>
+            `, "text/xml");
+            Blockly.Xml.domToWorkspace(xml.documentElement, workspace);
+        });
+    </script>
+</body>
+</html>
