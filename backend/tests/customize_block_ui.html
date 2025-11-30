@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Blockly with Scratch-style Categories Using Icons</title>
+
+    <!-- Include FontAwesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+
+    <!-- Blockly Library -->
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+
+    <!-- Custom Styling (CSS) for Scratch-Like UI -->
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f7f6;
+        flex-direction: column;
+      }
+
+      #blocklyDiv {
+        width: 600px;
+        height: 400px;
+        border: 2px solid #ccc;
+        background-color: #fff;
+      }
+
+      /* Toolbox Custom Styling */
+      .blocklyToolbox {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: #fff;
+        border-right: 2px solid #ccc;
+        width: 200px;
+        height: 100vh;
+        box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Top Categories Bar with Icons */
+      .category-bar {
+        display: flex;
+        justify-content: space-evenly;
+        padding: 10px;
+        background-color: #f1f1f1;
+        border-bottom: 2px solid #ccc;
+        width: 100%;
+      }
+
+      /* Category Button Style */
+      .category-button {
+        padding: 10px;
+        cursor: pointer;
+        font-size: 28px; /* Increase icon size */
+        transition: all 0.3s;
+        text-align: center;
+      }
+
+      /* Category Colors (Like Scratch) */
+      .category-button.motion {
+        color: #4e97c7;
+      }
+      .category-button.looks {
+        color: #d25d95;
+      }
+      .category-button.events {
+        color: #f0b81f;
+      }
+      .category-button.control {
+        color: #6cb56d;
+      }
+      .category-button.sensing {
+        color: #69c7c4;
+      }
+
+      /* Hover Effect for Category Buttons */
+      .category-button:hover {
+        color: #333;
+        transform: scale(1.1);
+      }
+
+      /* Blockly Workspace Styling */
+      .blocklySvg .blocklyBlockBackground {
+        fill: #3498db; /* Blue for block background */
+      }
+
+      .blocklyText {
+        font-size: 14px;
+        fill: white;
+      }
+
+      .blocklyTooltip {
+        background-color: #27ae60;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 style="text-align: center">
+      Blockly with Scratch-style Toolbox Using Icons
+    </h2>
+
+    <!-- Blockly Workspace Container -->
+    <div id="blocklyDiv"></div>
+
+    <!-- Hidden Blockly Toolbox (XML) -->
+    <xml id="toolbox" style="display: none">
+      <div class="category-button motion">
+        <i class="fas fa-location-arrow"></i>
+        <category name="Motion" colour="#4e97c7">
+          <block type="slider_block"></block>
+        </category>
+      <category name="Looks" colour="#d25d95">
+        <block type="text_print"></block>
+      </category>
+      <category name="Events" colour="#f0b81f">
+        <block type="event_whenflagclicked"></block>
+      </category>
+      <category name="Control" colour="#6cb56d">
+        <block type="controls_if"></block>
+      </category>
+      <category name="Sensing" colour="#69c7c4">
+        <block type="sensing_touchingobject"></block>
+      </category>
+    </xml>
+
+    <script>
+      // Custom Blockly Block Definition
+      Blockly.defineBlocksWithJsonArray([
+        {
+          type: "slider_block",
+          message0: "Slider %1",
+          args0: [
+            {
+              type: "field_slider",
+              name: "SLIDER",
+              min: 0,
+              max: 100,
+              value: 50,
+              step: 1,
+            },
+          ],
+          output: "Number",
+          colour: 160,
+          tooltip: "A block with a slider",
+          helpUrl: "",
+        },
+      ]);
+
+      // Inject Blockly workspace into the page
+      const workspace = Blockly.inject("blocklyDiv", {
+        toolbox: document.getElementById("toolbox"),
+        grid: {
+          spacing: 20,
+          length: 3,
+          colour: "#ccc",
+          snap: true,
+        },
+        zoom: {
+          controls: true,
+          wheel: true,
+        },
+      });
+
+      // Add slider field to Blockly
+      Blockly.FieldSlider = function (min, max, value, step) {
+        Blockly.FieldSlider.superClass_.constructor.call(this, value);
+        this.min_ = min;
+        this.max_ = max;
+        this.step_ = step;
+      };
+
+      Blockly.utils.object.inherits(Blockly.FieldSlider, Blockly.FieldNumber);
+
+      // Add custom behavior when the slider is adjusted
+      Blockly.FieldSlider.prototype.onChange = function (e) {
+        this.setText(e);
+        this.sourceBlock_.setOutputValue(e);
+      };
+
+      // Custom Category Button Interaction (Optional)
+      const categoryButtons = document.querySelectorAll(".category-button");
+      categoryButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const categoryName = this.classList[1]; // Get the class for the category
+          const toolboxCategory = document.querySelector(
+            `#toolbox category[name="${
+              categoryName.charAt(0).toUpperCase() + categoryName.slice(1)
+            }"]`
+          );
+          workspace.updateToolbox(toolboxCategory);
+        });
+      });
+    </script>
+  </body>
+</html>

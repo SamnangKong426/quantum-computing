@@ -1,0 +1,30 @@
+<canvas id="histogram"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const data = [4, 8, 6, 2, 5, 9, 3, 7, 4, 6]; // example data
+
+  // Create bins (e.g., 0–2, 2–4, 4–6...)
+  const binSize = 2;
+  const maxValue = Math.max(...data);
+  const bins = new Array(Math.ceil(maxValue / binSize)).fill(0);
+
+  data.forEach(v => bins[Math.floor(v / binSize)]++);
+
+  const labels = bins.map((_, i) => `${i*binSize}–${(i+1)*binSize}`);
+
+  new Chart(document.getElementById("histogram"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Frequency",
+        data: bins,
+        backgroundColor: "rgba(52, 152, 219, 0.7)"
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+</script>

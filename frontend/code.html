@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>VSCode Editor</title>
+  <style>
+    #container {
+      width: 600px;
+      height: 400px;
+      border: 1px solid #3c3c3c;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script>
+  require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+
+  require(["vs/editor/editor.main"], function () {
+    monaco.editor.create(document.getElementById('container'), {
+      value: `function hello() {\n  console.log("Hello, world!");\n}`,
+      language: "javascript",
+      theme: "vs-dark"
+    });
+  });
+</script>
+
+</body>
+</html>
