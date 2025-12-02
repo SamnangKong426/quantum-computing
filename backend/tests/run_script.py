@@ -19,7 +19,6 @@ async def runscript():
         qc = QuantumCircuit(2, 2)
 
         qc.h(0)
-        qc.h(1)
 
         qc.measure([0, 1], [0, 1])
 
@@ -44,10 +43,26 @@ async def runscript():
         # Extract counts from the local variables
         counts = local_var.get('counts', {})
 
-        # Convert counts into a more user-friendly response
+        # If counts are available, generate the histogram image
         if counts:
-            # If there are counts, return the counts
-            return {"result": "Success", "counts": counts}
+            # Create the histogram plot
+            fig = plt.figure()
+            plot_histogram(counts, ax=fig.gca())
+
+            # Save the plot to a BytesIO object to return as a base64 string
+            img_bytes = io.BytesIO()
+            plt.savefig(img_bytes, format='png')
+            img_bytes.seek(0)
+
+            # Convert the image to a base64 string
+            img_base64 = base64.b64encode(img_bytes.read()).decode('utf-8')
+
+            # Return the result along with the image in base64
+            return {
+                "result": "Success",
+                "counts": counts,
+                "plot_image": img_base64
+            }
         else:
             return {"result": "No results", "message": "No counts returned from simulation."}
 

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <style>
+      #blocklyDiv {
+        height: 480px;
+        width: 600px;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Blockly with Custom Block Example</h2>
+    <div id="blocklyDiv"></div>
+    <button onclick="generateCode()">Generate Code</button>
+
+    <script>
+      // Custom block definition
+      Blockly.defineBlocksWithJsonArray([{
+        "type": "multiply_add",
+        "message0": "%1 * %2 + %3",
+        "args0": [
+          {"type": "input_value", "name": "NUMBER1"},
+          {"type": "input_value", "name": "NUMBER2"},
+          {"type": "input_value", "name": "NUMBER3"}
+        ],
+        "output": "Number",
+        "colour": 230
+      }]);
+
+      // Code generator for custom block
+      Blockly.JavaScript['multiply_add'] = function(block) {
+        var number1 = Blockly.JavaScript.valueToCode(block, 'NUMBER1', Blockly.JavaScript.ORDER_ATOMIC);
+        var number2 = Blockly.JavaScript.valueToCode(block, 'NUMBER2', Blockly.JavaScript.ORDER_ATOMIC);
+        var number3 = Blockly.JavaScript.valueToCode(block, 'NUMBER3', Blockly.JavaScript.ORDER_ATOMIC);
+        var code = number1 + ' * ' + number2 + ' + ' + number3;
+        return [code, Blockly.JavaScript.ORDER_NONE];
+      };
+
+      // Create Blockly workspace
+      var workspace = Blockly.inject('blocklyDiv', {
+        toolbox: '<xml><block type="multiply_add"></block></xml>',
+      });
+
+      // Generate JavaScript code from Blockly workspace
+      function generateCode() {
+        var code = Blockly.JavaScript.workspaceToCode(workspace);
+        alert(code);
+      }
+    </script>
+  </body>
+</html>
