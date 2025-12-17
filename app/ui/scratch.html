@@ -2,233 +2,649 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Quantum Scratch</title>
     <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
-    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
     <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/msg/en.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
     <style>
-      :root {
-        --scratch-purple: #855cd6;
-        --scratch-blue: #4c97ff;
-        --scratch-background: #f9f9f9;
-        --scratch-border: #dddddd;
-        --header-height: 50px;
-      }
-
-      body, html {
-        height: 100%;
+      body {
         margin: 0;
         padding: 0;
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background-color: var(--scratch-background);
         overflow: hidden;
+        background-color: #ffffff;
       }
-
-      /* Navbar styling */
-      .navbar {
-        height: var(--header-height);
-        background-color: var(--scratch-blue);
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        color: white;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        z-index: 10;
-      }
-
-      .navbar button {
-        background: orange;
-        border: none;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        cursor: pointer;
-        font-weight: bold;
-        margin-left: auto;
-        transition: transform 0.2s;
-      }
-
-      .navbar button:hover {
-        transform: scale(1.05);
-      }
-
-      /* Main Layout */
-      #main-container {
-        display: flex;
-        height: calc(100% - var(--header-height));
-        width: 100%;
-      }
-
       #blocklyDiv {
-        flex-grow: 1;
-        height: 100%;
+        height: 100vh;
+        width: 100vw;
       }
-
-      /* Code Preview Panel (Stage Area) */
-      #codePanel {
-        width: 350px;
-        background: white;
-        border-left: 2px solid var(--scratch-border);
+      /* Makes our label white. */
+      .blocklyToolboxCategoryLabel {
+        color: #fff;
+      }
+      /* Adds padding around the group of categories and separators. */
+      .blocklyToolboxCategoryGroup {
+        padding: 0.5em;
+      }
+      /* Adds space between the categories, rounds the corners and adds space around the label. */
+      .blocklyToolboxCategory {
+        padding: 3px;
+        margin-bottom: 0.5em;
+        border-radius: 4px;
+      }
+      /* Changes color of the icon to white. */
+      .customIcon {
+        color: #fff;
+      }
+      /* Stacks the icon on top of the label. */
+      .blocklyTreeRowContentContainer {
         display: flex;
         flex-direction: column;
+        align-items: center;
       }
-
-      .panel-header {
-        background: #f0f0f0;
-        padding: 10px;
-        font-size: 14px;
-        font-weight: bold;
-        color: #575e75;
-        border-bottom: 1px solid var(--scratch-border);
-      }
-
-      #codeDiv {
-        flex-grow: 1;
-        padding: 15px;
-        font-family: "Source Code Pro", monospace;
-        font-size: 13px;
-        white-space: pre;
-        overflow: auto;
-        color: #333;
-        line-height: 1.5;
-      }
-
-      /* Customizing the Blockly Toolbox */
-      .blocklyToolboxDiv {
-        background-color: white !important;
-        border-right: 1px solid var(--scratch-border);
+      .blocklyToolboxCategory {
+        height: initial;
       }
     </style>
   </head>
   <body>
-    <div class="navbar">
-      <span>Quantum Scratch 1.0</span>
-      <button onclick="generateCode()">Run Code ▷</button>
-    </div>
+    <div id="blocklyDiv"></div>
 
-    <div id="main-container">
-      <div id="blocklyDiv"></div>
-      
-      <div id="codePanel">
-        <div class="panel-header">Python Output</div>
-        <div id="codeDiv"># Your code will appear here...</div>
-      </div>
-    </div>
-
-    <xml id="toolbox" style="display: none">
-      <category name="Events" colour="#FFD500">
-        <block type="quantum_circuit"></block>
+    <xml
+      xmlns="https://developers.google.com/blockly/xml"
+      id="toolbox-categories"
+      style="display: none"
+    >
+      <!-- <toolboxlabel name="Custom Toolbox" colour="darkslategrey"></toolboxlabel> -->
+      <category
+        css-icon="customIcon fa fa-cog"
+        name="Logic"
+        categorystyle="logic_category"
+      >
+        <block type="controls_if"></block>
+        <block type="logic_compare"></block>
+        <block type="logic_operation"></block>
+        <block type="logic_negate"></block>
+        <block type="logic_boolean"></block>
+        <block type="logic_null" disabled="true"></block>
+        <block type="logic_ternary"></block>
       </category>
-      <category name="Motion (Gates)" colour="#4C97FF">
-          <block type="apply_gate"><field name="GATE">H</field></block>
-          <block type="apply_gate"><field name="GATE">X</field></block>
-          <block type="apply_gate"><field name="GATE">CNOT</field></block>
-          <block type="apply_gate"><field name="GATE">SWAP</field></block>
+      <category name="Loops" categorystyle="loop_category">
+        <block type="controls_repeat_ext">
+          <value name="TIMES">
+            <shadow type="math_number">
+              <field name="NUM">10</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="controls_repeat" disabled="true"></block>
+        <block type="controls_whileUntil"></block>
+        <block type="controls_for">
+          <value name="FROM">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+          <value name="TO">
+            <shadow type="math_number">
+              <field name="NUM">10</field>
+            </shadow>
+          </value>
+          <value name="BY">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="controls_forEach"></block>
+        <block type="controls_flow_statements"></block>
       </category>
-      <category name="Sensing" colour="#4CBFE1">
-        <block type="measure_qubit"></block>
-        <block type="reset_qubit"></block>
+      <category name="Math" categorystyle="math_category">
+        <block type="math_number" gap="32">
+          <field name="NUM">123</field>
+        </block>
+        <block type="math_arithmetic">
+          <value name="A">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+          <value name="B">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_single">
+          <value name="NUM">
+            <shadow type="math_number">
+              <field name="NUM">9</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_trig">
+          <value name="NUM">
+            <shadow type="math_number">
+              <field name="NUM">45</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_constant"></block>
+        <block type="math_number_property">
+          <value name="NUMBER_TO_CHECK">
+            <shadow type="math_number">
+              <field name="NUM">0</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_round">
+          <value name="NUM">
+            <shadow type="math_number">
+              <field name="NUM">3.1</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_on_list"></block>
+        <block type="math_modulo">
+          <value name="DIVIDEND">
+            <shadow type="math_number">
+              <field name="NUM">64</field>
+            </shadow>
+          </value>
+          <value name="DIVISOR">
+            <shadow type="math_number">
+              <field name="NUM">10</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_constrain">
+          <value name="VALUE">
+            <shadow type="math_number">
+              <field name="NUM">50</field>
+            </shadow>
+          </value>
+          <value name="LOW">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+          <value name="HIGH">
+            <shadow type="math_number">
+              <field name="NUM">100</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_random_int">
+          <value name="FROM">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+          <value name="TO">
+            <shadow type="math_number">
+              <field name="NUM">100</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="math_random_float"></block>
+        <block type="math_atan2">
+          <value name="X">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+          <value name="Y">
+            <shadow type="math_number">
+              <field name="NUM">1</field>
+            </shadow>
+          </value>
+        </block>
       </category>
-      <category name="Control" colour="#FFAB19">
-        <block type="barrier"></block>
-        <block type="conditional_gate"></block>
+      <category name="Text" categorystyle="text_category">
+        <block type="text"></block>
+        <block type="text_join"></block>
+        <block type="text_append">
+          <value name="TEXT">
+            <shadow type="text"></shadow>
+          </value>
+        </block>
+        <block type="text_length">
+          <value name="VALUE">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_isEmpty">
+          <value name="VALUE">
+            <shadow type="text">
+              <field name="TEXT"></field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_indexOf">
+          <value name="VALUE">
+            <block type="variables_get">
+              <field name="VAR">text</field>
+            </block>
+          </value>
+          <value name="FIND">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_charAt">
+          <value name="VALUE">
+            <block type="variables_get">
+              <field name="VAR">text</field>
+            </block>
+          </value>
+        </block>
+        <block type="text_getSubstring">
+          <value name="STRING">
+            <block type="variables_get">
+              <field name="VAR">text</field>
+            </block>
+          </value>
+        </block>
+        <block type="text_changeCase">
+          <value name="TEXT">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_trim">
+          <value name="TEXT">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_count">
+          <value name="SUB">
+            <shadow type="text"></shadow>
+          </value>
+          <value name="TEXT">
+            <shadow type="text"></shadow>
+          </value>
+        </block>
+        <block type="text_replace">
+          <value name="FROM">
+            <shadow type="text"></shadow>
+          </value>
+          <value name="TO">
+            <shadow type="text"></shadow>
+          </value>
+          <value name="TEXT">
+            <shadow type="text"></shadow>
+          </value>
+        </block>
+        <block type="text_reverse">
+          <value name="TEXT">
+            <shadow type="text"></shadow>
+          </value>
+        </block>
+        <label text="Input/Output:" web-class="ioLabel"></label>
+        <block type="text_print">
+          <value name="TEXT">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="text_prompt_ext">
+          <value name="TEXT">
+            <shadow type="text">
+              <field name="TEXT">abc</field>
+            </shadow>
+          </value>
+        </block>
       </category>
-      <category name="Operators" colour="#59C059">
-         <block type="run_circuit"></block>
+      <category name="Lists" categorystyle="list_category">
+        <block type="lists_create_with">
+          <mutation items="0"></mutation>
+        </block>
+        <block type="lists_create_with"></block>
+        <block type="lists_repeat">
+          <value name="NUM">
+            <shadow type="math_number">
+              <field name="NUM">5</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="lists_length"></block>
+        <block type="lists_isEmpty"></block>
+        <block type="lists_indexOf">
+          <value name="VALUE">
+            <block type="variables_get">
+              <field name="VAR">list</field>
+            </block>
+          </value>
+        </block>
+        <block type="lists_getIndex">
+          <value name="VALUE">
+            <block type="variables_get">
+              <field name="VAR">list</field>
+            </block>
+          </value>
+        </block>
+        <block type="lists_setIndex">
+          <value name="LIST">
+            <block type="variables_get">
+              <field name="VAR">list</field>
+            </block>
+          </value>
+        </block>
+        <block type="lists_getSublist">
+          <value name="LIST">
+            <block type="variables_get">
+              <field name="VAR">list</field>
+            </block>
+          </value>
+        </block>
+        <block type="lists_split">
+          <value name="DELIM">
+            <shadow type="text">
+              <field name="TEXT">,</field>
+            </shadow>
+          </value>
+        </block>
+        <block type="lists_sort"></block>
+        <block type="lists_reverse"></block>
       </category>
-      <category name="Looks" colour="#9966FF">
-        <block type="draw_mpl"></block>
+      <sep></sep>
+      <category
+        name="Variables"
+        categorystyle="variable_category"
+        custom="VARIABLE"
+      ></category>
+      <category
+        name="Functions"
+        categorystyle="procedure_category"
+        custom="PROCEDURE"
+      ></category>
+      <br />
+      <sep></sep>
+      <category
+        name="Qubits"
+        css-icon="customIcon fa fa-cog"
+        categorystyle="logic_category"
+        ><block type="quantum_circuit"></block
+      ></category>
+      <category
+        name="Gates"
+        css-icon="customIcon fa fa-cog"
+        categorystyle="logic_category"
+      >
+        <block type="apply_gate"><field name="GATE">H</field></block>
+        <block type="apply_gate"><field name="GATE">X</field></block>
+        <block type="apply_gate"><field name="GATE">CNOT</field></block>
       </category>
+      <category
+        name="Measurement"
+        css-icon="customIcon fa fa-cog"
+        categorystyle="logic_category"
+        ><block type="measure_qubit"></block
+      ></category>
     </xml>
 
     <script>
-      // Scratch Theme Definition
-      const ScratchTheme = Blockly.Theme.defineTheme('scratch', {
-        'base': Blockly.Themes.Classic,
-        'blockStyles': {
-          'list_blocks': { 'colourPrimary': '#4C97FF' },
-          'logic_blocks': { 'colourPrimary': '#FFAB19' }
-        },
-        'categoryStyles': {},
-        'componentStyles': {
-          'workspaceBackgroundColour': '#F9F9F9',
-          'toolboxBackgroundColour': '#FFFFFF',
-          'toolboxTextColour': '#575E75',
-          'flyoutBackgroundColour': '#F9F9F9',
-          'flyoutOpacity': 1,
-          'scrollbarColour': '#CCCCCC',
-          'insertionMarkerColour': '#000000',
-          'insertionMarkerOpacity': 0.2,
-        },
-        'fontStyle': {
-          'family': '"Helvetica Neue", Helvetica, Arial, sans-serif',
-          'weight': 'bold',
-          'size': 12
-        },
-        'startHats': true // Adds the curved top to "starting" blocks like Scratch
-      });
+      /**
+       * @license
+       * Copyright 2020 Google LLC
+       * SPDX-License-Identifier: Apache-2.0
+       */
 
-      // --- [Block Definitions and Generators same as your original code] ---
-      // (Simplified for brevity, but kept your logic)
+      /**
+       * @fileoverview The toolbox category built during the custom toolbox codelab, in es6.
+       * @author aschmiedt@google.com (Abby Schmiedt)
+       */
+
+      class CustomCategory extends Blockly.ToolboxCategory {
+        /**
+         * Constructor for a custom category.
+         * @override
+         */
+        constructor(categoryDef, toolbox, opt_parent) {
+          super(categoryDef, toolbox, opt_parent);
+        }
+
+        /**
+         * Adds the colour to the toolbox.
+         * This is called on category creation and whenever the theme changes.
+         * @override
+         */
+        addColourBorder_(colour) {
+          this.rowDiv_.style.backgroundColor = colour;
+        }
+
+        /**
+         * Sets the style for the category when it is selected or deselected.
+         * @param {boolean} isSelected True if the category has been selected,
+         *     false otherwise.
+         * @override
+         */
+        setSelected(isSelected) {
+          // We do not store the label span on the category, so use getElementsByClassName.
+          const labelDom = this.rowDiv_.getElementsByClassName(
+            "blocklyToolboxCategoryLabel"
+          )[0];
+          if (isSelected) {
+            // Change the background color of the div to white.
+            this.rowDiv_.style.backgroundColor = "white";
+            // Set the colour of the text to the colour of the category.
+            labelDom.style.color = this.colour_;
+            this.iconDom_.style.color = this.colour_;
+          } else {
+            // Set the background back to the original colour.
+            this.rowDiv_.style.backgroundColor = this.colour_;
+            // Set the text back to white.
+            labelDom.style.color = "white";
+            this.iconDom_.style.color = "white";
+          }
+          // This is used for accessibility purposes.
+          Blockly.utils.aria.setState(
+            /** @type {!Element} */ (this.htmlDiv_),
+            Blockly.utils.aria.State.SELECTED,
+            isSelected
+          );
+        }
+
+        /**
+         * Creates the dom used for the icon.
+         * @returns {HTMLElement} The element for the icon.
+         * @override
+         */
+        createIconDom_() {
+          const iconImg = document.createElement("img");
+          iconImg.src = "./logo_only.svg";
+          iconImg.alt = "Blockly Logo";
+          iconImg.width = "25";
+          iconImg.height = "25";
+          return iconImg;
+        }
+      }
+
+      /**
+       * @license
+       * Copyright 2020 Google LLC
+       * SPDX-License-Identifier: Apache-2.0
+       */
+
+      /**
+       * @fileoverview The toolbox label built during the custom toolbox codelab, in es6.
+       * @author aschmiedt@google.com (Abby Schmiedt)
+       */
+
+      class ToolboxLabel extends Blockly.ToolboxItem {
+        /**
+         * Constructor for a label in the toolbox.
+         * @param {!Blockly.utils.toolbox.ToolboxItemInfo} toolboxItemDef The toolbox
+         *    item definition. This comes directly from the toolbox definition.
+         * @param {!Blockly.IToolbox} parentToolbox The toolbox that holds this
+         *    toolbox item.
+         * @override
+         */
+        constructor(toolboxItemDef, parentToolbox) {
+          super(toolboxItemDef, parentToolbox);
+          /**
+           * The button element.
+           * @type {?HTMLLabelElement}
+           */
+          this.label = null;
+        }
+
+        /**
+         * Init method for the label.
+         * @override
+         */
+        init() {
+          // Create the label.
+          this.label = document.createElement("label");
+          // Set the name.
+          this.label.textContent = this.toolboxItemDef_["name"];
+          // Set the color.
+          this.label.style.color = this.toolboxItemDef_["colour"];
+          // Any attributes that begin with css- will get added to a cssconfig.
+          const cssConfig = this.toolboxItemDef_["cssconfig"];
+          // Add the class.
+          if (cssConfig) {
+            this.label.classList.add(cssConfig["label"]);
+          }
+        }
+
+        /**
+         * Gets the div for the toolbox item.
+         * @returns {HTMLLabelElement} The label element.
+         * @override
+         */
+        getDiv() {
+          return this.label;
+        }
+      }
+
+      Blockly.registry.register(
+        Blockly.registry.Type.TOOLBOX_ITEM,
+        "toolboxlabel",
+        ToolboxLabel
+      );
+
+      Blockly.registry.register(
+        Blockly.registry.Type.TOOLBOX_ITEM,
+        Blockly.ToolboxCategory.registrationName,
+        CustomCategory,
+        true
+      );
+
+      // --- Block Definitions ---
       Blockly.Blocks["quantum_circuit"] = {
         init: function () {
-          this.appendDummyInput().appendField("when started: q")
-            .appendField(new Blockly.FieldNumber(2), "QUBITS")
-            .appendField("c")
-            .appendField(new Blockly.FieldNumber(2), "CLASSICAL_BITS");
-          this.setNextStatement(true, null);
-          this.setColour("#FFD500"); // Scratch Event Yellow
+          this.appendDummyInput()
+            .appendField("Circuit")
+            .appendField(new Blockly.FieldNumber(2, 1), "QUBITS")
+            .appendField("q,")
+            .appendField(new Blockly.FieldNumber(2, 0), "CLASSICAL_BITS")
+            .appendField("c");
+          this.setNextStatement(true);
+          this.setColour(160);
         },
       };
 
-      // Apply Gate with Rounded Look
       Blockly.Blocks["apply_gate"] = {
         init: function () {
           this.appendDummyInput()
             .appendField("apply")
-            .appendField(new Blockly.FieldDropdown([["H", "H"],["X", "X"],["CNOT", "CNOT"],["SWAP", "SWAP"]]), "GATE")
+            .appendField(
+              new Blockly.FieldDropdown([
+                ["H", "H"],
+                ["X", "X"],
+                ["CNOT", "CNOT"],
+              ]),
+              "GATE"
+            )
             .appendField("on")
             .appendField(new Blockly.FieldTextInput("0"), "QUBIT");
-          this.setPreviousStatement(true, null);
-          this.setNextStatement(true, null);
-          this.setColour("#4C97FF"); 
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(230);
         },
       };
 
-      // (Include your other block definitions here with updated Scratch colors...)
-      // Measure: #4CBFE1, Barrier/If: #FFAB19, Run: #59C059, View: #9966FF
-
-      // Copy-paste your Python Generators here...
-      python.pythonGenerator.forBlock["quantum_circuit"] = function (block) {
-        var q = block.getFieldValue("QUBITS");
-        var c = block.getFieldValue("CLASSICAL_BITS");
-        return `from qiskit import QuantumCircuit\nqc = QuantumCircuit(${q}, ${c})\n`;
+      Blockly.Blocks["measure_qubit"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("measure qubit")
+            .appendField(new Blockly.FieldTextInput("0"), "QUBIT")
+            .appendField("to bit")
+            .appendField(new Blockly.FieldTextInput("0"), "CBIT");
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(120);
+        },
       };
-      python.pythonGenerator.forBlock["apply_gate"] = function (block) {
-        var gate = block.getFieldValue("GATE");
-        var qubit = block.getFieldValue("QUBIT");
-        return `qc.${gate.toLowerCase()}(${qubit})\n`;
+
+      const pythonGenerator = python.pythonGenerator;
+
+      pythonGenerator.forBlock["quantum_circuit"] = function (block) {
+        return (
+          "from qiskit import QuantumCircuit\\nqc = QuantumCircuit(" +
+          block.getFieldValue("QUBITS") +
+          ", " +
+          block.getFieldValue("CLASSICAL_BITS") +
+          ")\\n"
+        );
       };
-      // ... (rest of your generators) ...
 
-      // ------------------ INJECT WORKSPACE ------------------
+      pythonGenerator.forBlock["apply_gate"] = function (block) {
+        return (
+          "qc." +
+          block.getFieldValue("GATE").toLowerCase() +
+          "(" +
+          block.getFieldValue("QUBIT") +
+          ")\\n"
+        );
+      };
 
-      var workspace = Blockly.inject("blocklyDiv", {
-        toolbox: document.getElementById("toolbox"),
-        theme: ScratchTheme,
-        renderer: 'geras', // Provides the 3D-ish Scratch look
-        grid: { spacing: 20, length: 3, colour: '#eee', snap: true },
-        zoom: { controls: true, wheel: true, startScale: 0.85 }
+      pythonGenerator.forBlock["measure_qubit"] = function (block) {
+        return (
+          "qc.measure(" +
+          block.getFieldValue("QUBIT") +
+          ", " +
+          block.getFieldValue("CBIT") +
+          ")\\n"
+        );
+      };
+
+      const workspace = Blockly.inject("blocklyDiv", {
+        // theme: Blockly.Themes.Modern,
+        toolbox: document.getElementById("toolbox-categories"),
+        trashcan: true,
       });
 
-      function generateCode() {
-        const code = Blockly.Python.workspaceToCode(workspace);
-        document.getElementById("codeDiv").textContent = code;
-        // Logic for opening your streamlit app
-        // const newUrl = "http://localhost:8501/?codeContent=" + encodeURIComponent(code);
-        // window.open(newUrl, target="_blank");
+      // --- Update Logic ---
+      function syncToStreamlit() {
+        const code = pythonGenerator.workspaceToCode(workspace);
+        console.log(code)
+        // We use URL search params to send the code back to the parent Streamlit app
+        const parentUrl = new URL(window.parent.location.href);
+        parentUrl.searchParams.set("code", code);
+        window.parent.history.replaceState({}, "", parentUrl);
+
+        // Trigger a light refresh if needed, or use postMessage for more advanced setups
+        window.parent.postMessage(
+          { type: "streamlit:setComponentValue", value: code },
+          "*"
+        );
       }
+
+      workspace.addChangeListener((e) => {
+        if (!e.isUiEvent) syncToStreamlit();
+      });
     </script>
   </body>
 </html>

@@ -1,10 +1,22 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import json
+from funcs.blockly_gen import blockly_ui
+from funcs.chat_bot import chat_bot_ui
+from funcs.qiskit_sim import qiskit_sim_ui, sync_url_params
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_icon="⚛️", page_title="QuantumEdu", layout="wide")
+st.title("⚛️ Quantum Blockly Simulator", text_alignment="left")
 
-with open("ui/index.html", "r", encoding="utf-8") as f:
-    html_content = f.read()
 
-components.html(html_content, width=1800, height=800)
+
+if "code" not in st.session_state:
+    st.session_state.code = ""
+
+sync_url_params()   
+
+chat_bot_ui()
+
+with st.container(border=True, horizontal=True):
+    code = blockly_ui()
+    st.space()
+    qiskit_sim_ui()
+
