@@ -21,7 +21,7 @@ export function useQuantumTheme() {
           colourTertiary: "#7C3AED",
         },
         measure_blocks: {
-          colourPrimary: "#10B981",
+          // colourPrimary: "#10B981",
           colourSecondary: "#6EE7B7",
           colourTertiary: "#059669",
         },
