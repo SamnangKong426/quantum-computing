@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Quantum Scratch</title>
+    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+    <style>
+      :root {
+        --scratch-purple: #855cd6;
+        --scratch-blue: #4c97ff;
+        --scratch-background: #f9f9f9;
+        --scratch-border: #dddddd;
+        --header-height: 50px;
+      }
+
+      body, html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: var(--scratch-background);
+        overflow: hidden;
+      }
+
+      /* Navbar styling */
+      .navbar {
+        height: var(--header-height);
+        background-color: var(--scratch-blue);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 10;
+      }
+
+      .navbar button {
+        background: orange;
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: auto;
+        transition: transform 0.2s;
+      }
+
+      .navbar button:hover {
+        transform: scale(1.05);
+      }
+
+      /* Main Layout */
+      #main-container {
+        display: flex;
+        height: calc(100% - var(--header-height));
+        width: 100%;
+      }
+
+      #blocklyDiv {
+        flex-grow: 1;
+        height: 100%;
+      }
+
+      /* Code Preview Panel (Stage Area) */
+      #codePanel {
+        width: 350px;
+        background: white;
+        border-left: 2px solid var(--scratch-border);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-header {
+        background: #f0f0f0;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #575e75;
+        border-bottom: 1px solid var(--scratch-border);
+      }
+
+      #codeDiv {
+        flex-grow: 1;
+        padding: 15px;
+        font-family: "Source Code Pro", monospace;
+        font-size: 13px;
+        white-space: pre;
+        overflow: auto;
+        color: #333;
+        line-height: 1.5;
+      }
+
+      /* Customizing the Blockly Toolbox */
+      .blocklyToolboxDiv {
+        background-color: white !important;
+        border-right: 1px solid var(--scratch-border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <span>Quantum Scratch 1.0</span>
+      <button onclick="generateCode()">Run Code ▷</button>
+    </div>
+
+    <div id="main-container">
+      <div id="blocklyDiv"></div>
+      
+      <div id="codePanel">
+        <div class="panel-header">Python Output</div>
+        <div id="codeDiv"># Your code will appear here...</div>
+      </div>
+    </div>
+
+    <xml id="toolbox" style="display: none">
+      <category name="Events" colour="#FFD500">
+        <block type="quantum_circuit"></block>
+      </category>
+      <category name="Motion (Gates)" colour="#4C97FF">
+          <block type="apply_gate"><field name="GATE">H</field></block>
+          <block type="apply_gate"><field name="GATE">X</field></block>
+          <block type="apply_gate"><field name="GATE">CNOT</field></block>
+          <block type="apply_gate"><field name="GATE">SWAP</field></block>
+      </category>
+      <category name="Sensing" colour="#4CBFE1">
+        <block type="measure_qubit"></block>
+        <block type="reset_qubit"></block>
+      </category>
+      <category name="Control" colour="#FFAB19">
+        <block type="barrier"></block>
+        <block type="conditional_gate"></block>
+      </category>
+      <category name="Operators" colour="#59C059">
+         <block type="run_circuit"></block>
+      </category>
+      <category name="Looks" colour="#9966FF">
+        <block type="draw_mpl"></block>
+      </category>
+    </xml>
+
+    <script>
+      // Scratch Theme Definition
+      const ScratchTheme = Blockly.Theme.defineTheme('scratch', {
+        'base': Blockly.Themes.Classic,
+        'blockStyles': {
+          'list_blocks': { 'colourPrimary': '#4C97FF' },
+          'logic_blocks': { 'colourPrimary': '#FFAB19' }
+        },
+        'categoryStyles': {},
+        'componentStyles': {
+          'workspaceBackgroundColour': '#F9F9F9',
+          'toolboxBackgroundColour': '#FFFFFF',
+          'toolboxTextColour': '#575E75',
+          'flyoutBackgroundColour': '#F9F9F9',
+          'flyoutOpacity': 1,
+          'scrollbarColour': '#CCCCCC',
+          'insertionMarkerColour': '#000000',
+          'insertionMarkerOpacity': 0.2,
+        },
+        'fontStyle': {
+          'family': '"Helvetica Neue", Helvetica, Arial, sans-serif',
+          'weight': 'bold',
+          'size': 12
+        },
+        'startHats': true // Adds the curved top to "starting" blocks like Scratch
+      });
+
+      // --- [Block Definitions and Generators same as your original code] ---
+      // (Simplified for brevity, but kept your logic)
+      Blockly.Blocks["quantum_circuit"] = {
+        init: function () {
+          this.appendDummyInput().appendField("when started: q")
+            .appendField(new Blockly.FieldNumber(2), "QUBITS")
+            .appendField("c")
+            .appendField(new Blockly.FieldNumber(2), "CLASSICAL_BITS");
+          this.setNextStatement(true, null);
+          this.setColour("#FFD500"); // Scratch Event Yellow
+        },
+      };
+
+      // Apply Gate with Rounded Look
+      Blockly.Blocks["apply_gate"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("apply")
+            .appendField(new Blockly.FieldDropdown([["H", "H"],["X", "X"],["CNOT", "CNOT"],["SWAP", "SWAP"]]), "GATE")
+            .appendField("on")
+            .appendField(new Blockly.FieldTextInput("0"), "QUBIT");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#4C97FF"); 
+        },
+      };
+
+      // (Include your other block definitions here with updated Scratch colors...)
+      // Measure: #4CBFE1, Barrier/If: #FFAB19, Run: #59C059, View: #9966FF
+
+      // Copy-paste your Python Generators here...
+      python.pythonGenerator.forBlock["quantum_circuit"] = function (block) {
+        var q = block.getFieldValue("QUBITS");
+        var c = block.getFieldValue("CLASSICAL_BITS");
+        return `from qiskit import QuantumCircuit\nqc = QuantumCircuit(${q}, ${c})\n`;
+      };
+      python.pythonGenerator.forBlock["apply_gate"] = function (block) {
+        var gate = block.getFieldValue("GATE");
+        var qubit = block.getFieldValue("QUBIT");
+        return `qc.${gate.toLowerCase()}(${qubit})\n`;
+      };
+      // ... (rest of your generators) ...
+
+      // ------------------ INJECT WORKSPACE ------------------
+
+      var workspace = Blockly.inject("blocklyDiv", {
+        toolbox: document.getElementById("toolbox"),
+        theme: ScratchTheme,
+        renderer: 'geras', // Provides the 3D-ish Scratch look
+        grid: { spacing: 20, length: 3, colour: '#eee', snap: true },
+        zoom: { controls: true, wheel: true, startScale: 0.85 }
+      });
+
+      function generateCode() {
+        const code = Blockly.Python.workspaceToCode(workspace);
+        document.getElementById("codeDiv").textContent = code;
+        // Logic for opening your streamlit app
+        // const newUrl = "http://localhost:8501/?codeContent=" + encodeURIComponent(code);
+        // window.open(newUrl, target="_blank");
+      }
+    </script>
+  </body>
+</html>

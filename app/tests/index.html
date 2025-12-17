@@ -47,7 +47,7 @@
         <block type="quantum_circuit"></block>
       </category>
 
-      <category name="Quantum Gates" colour="230">
+      <category name="Gates" colour="230">
         <category name="Single-Qubit Gates" colour="210">
           <block type="apply_gate"><field name="GATE">H</field></block>
         </category>
@@ -278,7 +278,9 @@
       function generateCode() {
         const code = Blockly.Python.workspaceToCode(workspace);
         document.getElementById("codeDiv").textContent = code;
-        localStorage.setItem("quantum_blockly_code", code);
+        const newUrl =
+          "http://localhost:8501/?codeContent=" + encodeURIComponent(code);
+        window.open(newUrl, target="_blank");
       }
     </script>
   </body>

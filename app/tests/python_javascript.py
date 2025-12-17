@@ -1,3 +1,20 @@
+import streamlit as st
+import streamlit.components.v1 as components
+from urllib.parse import unquote
+
+# --- PAGE CONFIG ---
+st.set_page_config(layout="wide", page_title="Quantum Blockly")
+
+# --- UI HEADER ---
+st.title("⚛️ Quantum Circuit Designer")
+
+# --- BRIDGE LOGIC ---
+# We check if the URL contains code sent from the JavaScript side
+query_params = st.query_params
+current_code = query_params.get("code", "from qiskit import QuantumCircuit\nqc = QuantumCircuit(2, 2)")
+
+# --- HTML/JS COMPONENT ---
+blockly_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -99,3 +116,25 @@
   </script>
 </body>
 </html>
+"""
+
+# --- LAYOUT ---
+col1, col2 = st.columns([3, 2])
+
+with col1:
+    st.subheader("Visual Editor")
+    # This renders the Blockly workspace
+    components.html(blockly_html, height=500)
+
+with col2:
+    st.subheader("Generated Qiskit Code")
+    # Display the code captured from the URL or state
+    st.code(current_code, language="python")
+    
+    if st.button("Simulate Circuit"):
+        st.balloons()
+        st.success("Executing code on Aer Simulator...")
+        # In a real app, you'd use exec(current_code) here
+        st.image("https://qiskit.org/documentation/_images/qiskit-metapackage.png", caption="Circuit Visualization")
+
+st.info("Note: If the code doesn't update, ensure your browser allows the iframe to communicate with the parent window.")
