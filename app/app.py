@@ -16,7 +16,7 @@ chat_bot_ui()
 
 cols = st.columns([7, 4], border=True)
 with cols[0]:
-    code = blockly_ui()
+    blockly_ui()
     
 with cols[1]:
     qiskit_sim_ui()

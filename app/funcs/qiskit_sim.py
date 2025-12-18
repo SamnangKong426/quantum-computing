@@ -79,5 +79,4 @@ def qiskit_sim_ui():
                 elif output["type"] == "print":
                     st.info(f"\>>> {output['data']}")
                 elif output["type"] == "error":
-                    st.error("You may some blocks")
                     st.error(output["data"])

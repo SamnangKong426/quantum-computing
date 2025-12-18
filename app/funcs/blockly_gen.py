@@ -390,16 +390,23 @@ def blockly_ui():
         css-icon="customIcon fa fa-microchip"
         categorystyle="logic_category"
       >
-        <block type="apply_gate"><field name="GATE">H</field></block>
-        <block type="apply_gate"><field name="GATE">X</field></block>
-        <block type="apply_gate"><field name="GATE">CNOT</field></block>
+        <block type="single_qubit_gate"><field name="GATE">X</field></block>
+        <block type="single_qubit_gate"><field name="GATE">X</field></block>
+        <block type="single_qubit_gate"><field name="GATE">Y</field></block>
+        <block type="single_qubit_gate"><field name="GATE">Z</field></block>
+        <block type="single_qubit_gate"><field name="GATE">H</field></block>
+        <block type="two_qubit_gate"><field name="GATE">CX</field></block>
+        <block type="two_qubit_gate"><field name="GATE">CZ</field></block>
+        <block type="two_qubit_gate"><field name="GATE">SWAP</field></block>
+        <block type="two_qubit_gate"><field name="GATE">ISSWAP</field></block>
       </category>
       <category
-        name="Measurement"
+        name="View"
         css-icon="customIcon fa fa-dashboard"
-        categorystyle="logic_category"
-        ><block type="measure_qubit"></block
-      ></category>
+        categorystyle="logic_category">
+        <block type="measure_qubit"></block>
+        <block type="barrier"></block>
+      </category>
     </xml>
 
     <script>
@@ -554,30 +561,57 @@ def blockly_ui():
       Blockly.Blocks["quantum_circuit"] = {{
         init: function () {{
           this.appendDummyInput()
-            .appendField("Circuit")
-            .appendField(new Blockly.FieldNumber(2, 1), "QUBITS")
-            .appendField("q,")
-            .appendField(new Blockly.FieldNumber(2, 0), "CLASSICAL_BITS")
-            .appendField("c");
+            .appendField("Qubit")
+            .appendField(new Blockly.FieldNumber(1, 0), "QUBITS")
+            .appendField("Classic")
+            .appendField(new Blockly.FieldNumber(1, 0), "CLASSICAL_BITS");
           this.setNextStatement(true);
           this.setColour(160);
         }},
       }};
 
-      Blockly.Blocks["apply_gate"] = {{
+      Blockly.Blocks["single_qubit_gate"] = {{
         init: function () {{
           this.appendDummyInput()
             .appendField("apply")
             .appendField(
               new Blockly.FieldDropdown([
-                ["H", "H"],
                 ["X", "X"],
-                ["CNOT", "CNOT"],
+                ["Y", "Y"],
+                ["Z", "Z"],
+                ["H", "H"],
               ]),
               "GATE"
             )
-            .appendField("on")
-            .appendField(new Blockly.FieldTextInput("0"), "QUBIT");
+            .appendField("on q[")
+            .appendField(new Blockly.FieldTextInput("0"), "QUBIT")
+            .appendField("]");
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(230);
+        }},
+      }};
+
+      Blockly.Blocks["two_qubit_gate"] = {{
+        init: function () {{
+          this.appendDummyInput()
+            .appendField("apply")
+            .appendField(
+              new Blockly.FieldDropdown([
+                ["CX", "CX"],
+                ["CZ", "CZ"],
+                ["SWAP", "SWAP"],
+                ["ISWAP", "ISWAP"],
+              ]),
+              "GATE"
+            )
+            .appendField("control q[")
+            .appendField(new Blockly.FieldTextInput("0"), "CONTROL")
+            .appendField("]")
+            .appendField("target q[")
+            .appendField(new Blockly.FieldTextInput("0"), "TARGET")
+            .appendField("]");
+
           this.setPreviousStatement(true);
           this.setNextStatement(true);
           this.setColour(230);
@@ -587,10 +621,22 @@ def blockly_ui():
       Blockly.Blocks["measure_qubit"] = {{
         init: function () {{
           this.appendDummyInput()
-            .appendField("measure qubit")
+            .appendField("measure q[")
             .appendField(new Blockly.FieldTextInput("0"), "QUBIT")
-            .appendField("to bit")
-            .appendField(new Blockly.FieldTextInput("0"), "CBIT");
+            .appendField("] ")
+            .appendField("to q[")
+            .appendField(new Blockly.FieldTextInput("0"), "CBIT")
+            .appendField("]");
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(120);
+        }},
+      }};
+
+      Blockly.Blocks["barrier"] = {{
+        init: function () {{
+          this.appendDummyInput()
+            .appendField("barrier")
           this.setPreviousStatement(true);
           this.setNextStatement(true);
           this.setColour(120);
@@ -609,12 +655,23 @@ def blockly_ui():
         );
       }};
 
-      pythonGenerator.forBlock["apply_gate"] = function (block) {{
+      pythonGenerator.forBlock["single_qubit_gate"] = function (block) {{
         return (
           "qc." +
           block.getFieldValue("GATE").toLowerCase() +
           "(" +
           block.getFieldValue("QUBIT") +
+          ")\\n"
+        );
+      }};
+
+      pythonGenerator.forBlock["two_qubit_gate"] = function (block) {{
+        return (
+          "qc." +
+          block.getFieldValue("GATE").toLowerCase() +
+          "(" +
+          block.getFieldValue("CONTROL") + ", " +
+          block.getFieldValue("TARGET") + 
           ")\\n"
         );
       }};
@@ -626,6 +683,12 @@ def blockly_ui():
           ", " +
           block.getFieldValue("CBIT") +
           ")\\n"
+        );
+      }};
+
+      pythonGenerator.forBlock["barrier"] = function (block) {{
+        return (
+          "qc.barrier()\\n"
         );
       }};
 
