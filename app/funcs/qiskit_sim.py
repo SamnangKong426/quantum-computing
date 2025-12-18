@@ -45,14 +45,23 @@ def qiskit_sim_ui():
     with st.container():
         with st.container(horizontal=True):
             st.subheader("Qiskit Python Generation")
-            button = st.empty()
+            with st.container(horizontal=True, horizontal_alignment="right"):
+                st.download_button(
+                    label="Download",
+                    file_name="quantum_edu.py",
+                    data=st.session_state.code,
+                    mime="text/x-python",
+                    disabled=not st.session_state.code,
+                    width="stretch"
+                )
+                button = st.empty()
 
         st.code(
             st.session_state.code if st.session_state.code else "",
             language="python",
             line_numbers=True,
         )
-        if button.button("Run Code", type="primary"):
+        if button.button("Run", type="primary",  width="stretch"):
             if not st.session_state.code:
                 return
 
@@ -68,6 +77,7 @@ def qiskit_sim_ui():
                         st.subheader("Histogram")
                         st.bar_chart(counts_df.set_index("State")["Counts"])
                 elif output["type"] == "print":
-                    st.info(output["data"])
+                    st.info(f"\>>> {output['data']}")
                 elif output["type"] == "error":
+                    st.error("You may some blocks")
                     st.error(output["data"])

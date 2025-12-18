@@ -15,8 +15,9 @@ sync_url_params()
 
 chat_bot_ui()
 
-with st.container(border=True, horizontal=True):
+cols = st.columns([7, 4])
+with cols[0]:
     code = blockly_ui()
-    st.space()
+with cols[1]:
     qiskit_sim_ui()
 
