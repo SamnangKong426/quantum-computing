@@ -12,6 +12,7 @@ from rope.refactor.importutils import ImportOrganizer
 
 CARD_HEIGHT = 450
 
+
 def init_session_state():
     if "code" not in st.session_state:
         st.session_state.code = ""
@@ -133,17 +134,27 @@ def render_result():
     if result and result["type"] != "success":
         st.error("Error: " + result["data"])
         return
+    
+    cols = st.columns(2, border=True, vertical_alignment="top")
 
-    cols = st.columns(3, border=True, vertical_alignment="center")
-
-    # Circuit
     with cols[0]:
+        # Bloch sphere
+        st.subheader("Bloch Sphere")
+        if result.get("bloch"):
+            st.pyplot(
+                result["bloch"],
+                width="content",
+            )
+
+    with cols[1]:
+        # Circuit
         st.subheader("Circuit")
         if result.get("circuit"):
-            st.pyplot(result["circuit"], width="content")
+            st.pyplot(result["circuit"], width="content", use_container_width=True)
 
-    # Histogram
-    with cols[1]:
+        st.divider()
+
+        # Histogram
         st.subheader("Histogram")
         if result.get("counts"):
             counts_df = pd.DataFrame(
@@ -151,8 +162,3 @@ def render_result():
             )
             st.bar_chart(counts_df.set_index("State")["Counts"])
 
-    # Bloch sphere
-    with cols[2]:
-        st.subheader("Bloch Sphere")
-        if result.get("bloch"):
-            st.pyplot(result["bloch"], width="content")
