@@ -54,9 +54,82 @@ def blockly_ui():
       .blocklyToolboxCategory {{
         height: initial;
       }}
+
+      .button-container {{
+        position: absolute; 
+        top: 10px; 
+        right: 20px; 
+        z-index: 100; 
+        display: flex; 
+        gap: 0.5rem;
+      }}
+
+      .gui-btn {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 400;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        margin: 0px;
+        line-height: 1.6;
+        color: rgb(49, 51, 63); /* Streamlit text color */
+        background-color: rgb(255, 255, 255);
+        border: 1px solid rgba(49, 51, 63, 0.2);
+        cursor: pointer;
+        font-family: "Source Sans Pro", sans-serif;
+        font-size: 1rem;
+        transition: border-color 200ms ease 0s, background-color 200ms ease 0s, color 200ms ease 0s;
+        text-decoration: none;
+      }}
+
+      .gui-btn:hover {{
+        border-color: rgb(255, 75, 75); /* Streamlit red accent */
+        color: rgb(255, 75, 75);
+        background-color: rgb(255, 255, 255);
+      }}
+
+      .gui-btn:active {{
+        background-color: rgb(255, 75, 75);
+        color: white;
+      }}
+
+      .gui-btn i {{
+        margin-right: 0.5rem;
+      }}
+      
+      /* Toolbox Styles */
+      .blocklyToolboxCategoryLabel {{ 
+        color: #fff; 
+        padding-top: 10px; }}
+      .blocklyToolboxCategoryGroup {{ 
+        padding: 0.5em; }}
+      .blocklyToolboxCategory {{ 
+        padding: 5px; 
+        margin-bottom: 0.5em; 
+        border-radius: 4px; 
+        height: initial; }}
+      .customIcon {{ 
+        color: #fff; 
+        }}
+      .blocklyTreeRowContentContainer {{ 
+        display: flex; 
+        flex-direction: 
+        column; 
+        align-items: center; }}      
     </style>
   </head>
   <body>
+    <div class="button-container">
+        <button class="gui-btn" onclick="saveWorkspace()"> 
+            <i class="fa fa-download"></i> Save JSON
+        </button>
+        <button class="gui-btn" onclick="document.getElementById('loadInput').click()"> 
+            <i class="fa fa-upload"></i> Load JSON
+        </button>
+        <input type="file" id="loadInput" style="display:none" onchange="loadWorkspace(event)" accept=".json">
+    </div>
+    
     <div id="blocklyDiv"></div>
 
     <xml
@@ -780,6 +853,30 @@ def blockly_ui():
           pinch: true}},
         trashcan: true,
       }});
+
+      window.saveWorkspace = function() {{
+        const state = Blockly.serialization.workspaces.save(workspace);
+        const data = JSON.stringify(state);
+        const blob = new Blob([data], {{type: "application/json"}});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = "quantum_edu.json";
+        link.click();
+      }};
+
+      window.loadWorkspace = function(event) {{
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {{
+          const state = JSON.parse(e.target.result);
+          Blockly.serialization.workspaces.load(state, workspace);
+          syncToStreamlit();
+        }};
+        reader.readAsText(file);
+      }};
+
 
       // --- Update Logic ---
       function syncToStreamlit() {{
