@@ -52,22 +52,6 @@ def run_sim(code: str) -> dict:
     sys.stdout = output_buffer
 
     try:
-        #         code = """
-        # from qiskit import QuantumCircuit, transpile
-        # from qiskit_aer import AerSimulator
-        # from qiskit.visualization import plot_histogram
-
-        # qc = QuantumCircuit(1, 1)
-
-        # qc.measure(0, 0)
-        # backend = AerSimulator()
-        # tqc = transpile(qc, backend)
-        # job = backend.run(tqc, shots=1024)
-        # result = job.result()
-        # counts = result.get_counts()
-
-        # plot_histogram(counts)
-        # """
         exec(code, exec_globals)
         sys.stdout = old_stdout
 
@@ -121,44 +105,45 @@ def qiskit_sim():
                 result = run_sim(code)
 
                 if result["type"] == "success":
-                    st.info("Success")
+                    st.success("Success", icon="✅")
                     st.session_state.result = result
                 elif result["type"] == "error":
-                    st.error("Error" + result["data"])
+                    e = RuntimeError(result["data"])
+                    st.exception(e)
+
+def vertical_divider():
+    st.markdown(
+        """
+        <div style="border-left: 1px solid #ccc; height: 15px; margin: 10px auto;"></div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def render_result():
-    """Render circuit, histogram, bloch sphere, and stdout with mobile support."""
     result = st.session_state.result
 
     if result and result["type"] != "success":
         st.error("Error: " + result["data"])
         return
-    
-    cols = st.columns(2, border=True, vertical_alignment="top")
 
-    with cols[0]:
-        # Bloch sphere
-        st.subheader("Bloch Sphere")
-        if result.get("bloch"):
-            st.pyplot(
-                result["bloch"],
-                width="content",
-            )
+    with st.container(border=True, horizontal=True, horizontal_alignment="distribute"):
+        with st.container():
+            st.subheader("Circuit")
+            if result.get("circuit"):
+                st.pyplot(result["circuit"])
 
-    with cols[1]:
-        # Circuit
-        st.subheader("Circuit")
-        if result.get("circuit"):
-            st.pyplot(result["circuit"], width="content", use_container_width=True)
+        vertical_divider()
+        with st.container():
+            st.subheader("Bloch Sphere")
+            if result.get("bloch"):
+                st.pyplot(result["bloch"])
 
-        st.divider()
-
-        # Histogram
-        st.subheader("Histogram")
-        if result.get("counts"):
-            counts_df = pd.DataFrame(
-                list(result["counts"].items()), columns=["State", "Counts"]
-            )
-            st.bar_chart(counts_df.set_index("State")["Counts"])
-
+        vertical_divider()
+        with st.container():
+            st.subheader("Histogram")
+            if result.get("counts"):
+                counts_df = pd.DataFrame(
+                    list(result["counts"].items()), columns=["State", "Counts"]
+                )
+                st.bar_chart(counts_df.set_index("State")["Counts"])
