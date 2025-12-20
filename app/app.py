@@ -1,7 +1,7 @@
 import streamlit as st
 
 from funcs.blockly_gen import blockly_ui
-from funcs.chat_bot import chat_bot_ui
+from funcs.chat_bot import chat_fragment
 from funcs.qiskit_sim import (
     init_session_state,
     qiskit_sim,
@@ -17,7 +17,8 @@ init_session_state()
 
 sync_url_params()
 
-chat_bot_ui()
+with st.sidebar:
+    chat_fragment()
 
 cols = st.columns([7, 4], border=True)
 with cols[0]:

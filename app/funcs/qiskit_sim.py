@@ -95,7 +95,7 @@ def qiskit_sim():
                 )
                 button = st.empty()
 
-        st.code(code if code else "", language="python", line_numbers=True)
+        st.code(code if code else "", language="python", line_numbers=True, height=600)
 
         if button.button("Run", type="primary", width="stretch"):
             if not code:
@@ -105,11 +105,15 @@ def qiskit_sim():
                 result = run_sim(code)
 
                 if result["type"] == "success":
-                    st.success("Success", icon="✅")
                     st.session_state.result = result
+                    st.balloons()
+
+                    st.toast(
+                        "Simulation is finished! Result is below.", icon="⚛️"
+                    )
                 elif result["type"] == "error":
-                    e = RuntimeError(result["data"])
-                    st.exception(e)
+                    error_msg = result.get("data", "Unknown simulation error")
+                    st.toast(f"**Simulation Error:** {error_msg}", icon="🚨")
 
 
 def render_result():
@@ -121,17 +125,17 @@ def render_result():
 
     with st.container(border=True, horizontal=True, horizontal_alignment="distribute"):
         with st.container():
-            st.subheader("Circuit")
+            st.subheader("Circuit", text_alignment="center")
             if result.get("circuit"):
                 st.pyplot(result["circuit"])
 
         with st.container():
-            st.subheader("Bloch Sphere")
+            st.subheader("Bloch Sphere", text_alignment="center")
             if result.get("bloch"):
                 st.pyplot(result["bloch"])
 
         with st.container():
-            st.subheader("Histogram")
+            st.subheader("Histogram", text_alignment="center")
             if result.get("counts"):
                 counts_df = pd.DataFrame(
                     list(result["counts"].items()), columns=["State", "Counts"]
