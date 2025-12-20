@@ -1,10 +1,10 @@
 import streamlit as st
 from funcs.blockly_gen import blockly_ui
 from funcs.chat_bot import chat_bot_ui
-from funcs.qiskit_sim import qiskit_sim_ui, sync_url_params
+from funcs.qiskit_sim import qiskit_sim, sync_url_params
 
 st.set_page_config(page_icon="⚛️", page_title="QuantumEdu", layout="wide")
-st.title("⚛️ Quantum Blockly Simulator", text_alignment="left")
+st.subheader("⚛️ Quantum Blockly Simulator", text_alignment="left")
 
 
 if "code" not in st.session_state:
@@ -19,4 +19,4 @@ with cols[0]:
     blockly_ui()
     
 with cols[1]:
-    qiskit_sim_ui()
+    qiskit_sim()

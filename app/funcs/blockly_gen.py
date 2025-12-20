@@ -391,7 +391,6 @@ def blockly_ui():
         categorystyle="logic_category"
       >
         <block type="single_qubit_gate"><field name="GATE">X</field></block>
-        <block type="single_qubit_gate"><field name="GATE">X</field></block>
         <block type="single_qubit_gate"><field name="GATE">Y</field></block>
         <block type="single_qubit_gate"><field name="GATE">Z</field></block>
         <block type="single_qubit_gate"><field name="GATE">H</field></block>
@@ -401,11 +400,19 @@ def blockly_ui():
         <block type="two_qubit_gate"><field name="GATE">ISSWAP</field></block>
       </category>
       <category
-        name="View"
+        name="Measure"
         css-icon="customIcon fa fa-dashboard"
         categorystyle="logic_category">
         <block type="measure_qubit"></block>
+        <block type="aer_simulator"></block>
+      </category>
+      <category
+        name="Circuit"
+        css-icon="customIcon fa fa-bolt"
+        categorystyle="logic_category">
         <block type="barrier"></block>
+        <block type="display_circuit"></block>
+        <block type="display_bloch"></block>
       </category>
     </xml>
 
@@ -609,12 +616,23 @@ def blockly_ui():
             .appendField(new Blockly.FieldTextInput("0"), "CONTROL")
             .appendField("]")
             .appendField("target q[")
-            .appendField(new Blockly.FieldTextInput("0"), "TARGET")
+            .appendField(new Blockly.FieldTextInput("1"), "TARGET")
             .appendField("]");
 
           this.setPreviousStatement(true);
           this.setNextStatement(true);
           this.setColour(230);
+        }},
+      }};
+
+      Blockly.Blocks["aer_simulator"] = {{
+        init: function () {{
+          this.appendDummyInput()
+            .appendField("Aer Simulator")
+            .appendField(new Blockly.FieldTextInput("1024"), "SHORTS");
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(120);
         }},
       }};
 
@@ -643,11 +661,33 @@ def blockly_ui():
         }},
       }};
 
+      Blockly.Blocks["display_circuit"] = {{
+        init: function () {{
+          this.appendDummyInput()
+            .appendField("display circuit")
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(120);
+        }},
+      }};
+
+      Blockly.Blocks["display_bloch"] = {{
+        init: function () {{
+          this.appendDummyInput()
+            .appendField("display bloch")
+          this.setPreviousStatement(true);
+          this.setNextStatement(true);
+          this.setColour(120);
+        }},
+      }};
+
+
       const pythonGenerator = python.pythonGenerator;
 
       pythonGenerator.forBlock["quantum_circuit"] = function (block) {{
         return (
-          "from qiskit import QuantumCircuit\\nqc = QuantumCircuit(" +
+          "from qiskit import QuantumCircuit\\n" + 
+          "qc = QuantumCircuit(" +
           block.getFieldValue("QUBITS") +
           ", " +
           block.getFieldValue("CLASSICAL_BITS") +
@@ -676,6 +716,21 @@ def blockly_ui():
         );
       }};
 
+      pythonGenerator.forBlock["aer_simulator"] = function (block) {{
+        const shots = block.getFieldValue("SHOTS") || 1024; 
+        return (
+          "from qiskit_aer import AerSimulator\\n" +
+          "from qiskit.visualization import plot_histogram\\n" +
+          "from qiskit import transpile\\n" +
+          "backend = AerSimulator()\\n" +
+          "tqc = transpile(qc, backend)\\n" +
+          "job = backend.run(tqc, shots=" + shots + ")\\n" +
+          "result = job.result()\\n" +
+          "counts = result.get_counts()\\n\\n" +
+          "plot_histogram(counts)\\n"
+        );
+      }};
+
       pythonGenerator.forBlock["measure_qubit"] = function (block) {{
         return (
           "qc.measure(" +
@@ -691,6 +746,26 @@ def blockly_ui():
           "qc.barrier()\\n"
         );
       }};
+
+      pythonGenerator.forBlock["display_circuit"] = function (block) {{
+        return (
+          "from qiskit.visualization import circuit_drawer\\n" +
+          "import matplotlib.pyplot as plt\\n" +
+          "circuit = circuit_drawer(qc, output='mpl')\\n" +
+          "plt.show()\\n"
+        );
+      }};
+
+      pythonGenerator.forBlock["display_bloch"] = function (block) {{
+        return (
+          "from qiskit.quantum_info import Statevector\\n" +
+          "from qiskit.visualization import plot_bloch_multivector\\n" +
+          "state = Statevector(qc)\\n" +
+          "bloch = plot_bloch_multivector(state)\\n" +
+          "plt.show()\\n"
+        );
+      }};
+      
 
       const workspace = Blockly.inject("blocklyDiv", {{
         theme: Blockly.Themes.Modern,
@@ -721,4 +796,4 @@ def blockly_ui():
   </body>
 </html>
 """
-    components.html(html_content, height=700)
+    components.html(html_content, height=730)
