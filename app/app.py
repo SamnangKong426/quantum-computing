@@ -1,7 +1,7 @@
 import streamlit as st
 from funcs.blockly_gen import blockly_ui
 from funcs.chat_bot import chat_bot_ui
-from funcs.qiskit_sim import qiskit_sim, sync_url_params
+from funcs.qiskit_sim import qiskit_sim, sync_url_params, render_result
 
 st.set_page_config(page_icon="⚛️", page_title="QuantumEdu", layout="wide")
 st.subheader("⚛️ Quantum Blockly Simulator", text_alignment="left")
@@ -20,3 +20,5 @@ with cols[0]:
     
 with cols[1]:
     qiskit_sim()
+
+render_result()

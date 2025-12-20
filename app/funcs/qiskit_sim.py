@@ -13,6 +13,9 @@ from rope.refactor.importutils import ImportOrganizer
 if "counts_df" not in st.session_state:
     st.session_state.counts_df = pd.DataFrame(columns=["State", "Counts"])
 
+if "result" not in st.session_state:
+    st.session_state.result = {}
+
 
 def fix_imports(code_str: str) -> str:
     with tempfile.TemporaryDirectory(prefix="rope_project_") as project_root:
@@ -45,23 +48,22 @@ def run_sim(code: str) -> dict:
     sys.stdout = output_buffer
 
     try:
-#         code = """
-# from qiskit import QuantumCircuit, transpile
-# from qiskit_aer import AerSimulator
-# from qiskit.visualization import plot_histogram
+        #         code = """
+        # from qiskit import QuantumCircuit, transpile
+        # from qiskit_aer import AerSimulator
+        # from qiskit.visualization import plot_histogram
 
+        # qc = QuantumCircuit(1, 1)
 
-# qc = QuantumCircuit(1, 1)
+        # qc.measure(0, 0)
+        # backend = AerSimulator()
+        # tqc = transpile(qc, backend)
+        # job = backend.run(tqc, shots=1024)
+        # result = job.result()
+        # counts = result.get_counts()
 
-# qc.measure(0, 0)
-# backend = AerSimulator()
-# tqc = transpile(qc, backend)
-# job = backend.run(tqc, shots=1024)
-# result = job.result()
-# counts = result.get_counts()
-
-# plot_histogram(counts)
-# """
+        # plot_histogram(counts)
+        # """
         exec(code, exec_globals)
         sys.stdout = old_stdout
 
@@ -73,7 +75,7 @@ def run_sim(code: str) -> dict:
             "qc": exec_globals.get("qc"),
             "circuit": exec_globals.get("circuit"),
             "counts": exec_globals.get("counts"),
-            "bloch": exec_globals.get("bloch")
+            "bloch": exec_globals.get("bloch"),
         }
     except Exception as e:
         sys.stdout = old_stdout
@@ -105,11 +107,8 @@ def qiskit_sim():
                 )
                 button = st.empty()
 
-        st.code(
-            code if code else "",
-            language="python",
-            line_numbers=True,
-        )
+        st.code(code if code else "", language="python", line_numbers=True)
+
         if button.button("Run", type="primary", width="stretch"):
             if not code:
                 return
@@ -118,26 +117,41 @@ def qiskit_sim():
                 result = run_sim(code)
 
                 if result["type"] == "success":
-                    if result["circuit"]:
-                        with st.container(border=True):
-                            st.subheader("Circuit")
-                            st.pyplot(result["circuit"], width="content")
-
-                    if result["counts"]:
-                        counts_df = pd.DataFrame(
-                            list(result["counts"].items()), columns=["State", "Counts"]
-                        )
-                        with st.container(border=True):
-                            st.subheader("Histogram")
-                            st.bar_chart(counts_df.set_index("State")["Counts"])
-
-                    if result["bloch"]:
-                        with st.container(border=True):
-                            st.subheader("Bloch")
-                            st.pyplot(result["bloch"], width="content")
-
-
                     st.info("Success")
+                    st.session_state.result = result
+                elif result["type"] == "error":
+                    st.error("Error" + result["data"])
 
-                if result["type"] == "error":
-                    st.error("Success" + result["data"])
+
+def render_result():
+    """Render circuit, histogram, bloch sphere, and stdout with mobile support."""
+    result = st.session_state.result
+
+    if result["type"] != "success":
+        st.error("Error: " + result["data"])
+        return
+
+    CARD_HEIGHT = 450
+
+    cols = st.columns(3, border=True)
+
+    # Circuit
+    with cols[0]:
+        st.subheader("Circuit")
+        if result.get("circuit"):
+            st.pyplot(result["circuit"], width="content")
+
+    # Histogram
+    with cols[1]:
+        st.subheader("Histogram")
+        if result.get("counts"):
+            counts_df = pd.DataFrame(
+                list(result["counts"].items()), columns=["State", "Counts"]
+            )
+            st.bar_chart(counts_df.set_index("State")["Counts"])
+
+    # Bloch sphere
+    with cols[2]:
+        st.subheader("Bloch Sphere")
+        if result.get("bloch"):
+            st.pyplot(result["bloch"], width="content")
