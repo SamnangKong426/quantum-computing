@@ -111,14 +111,6 @@ def qiskit_sim():
                     e = RuntimeError(result["data"])
                     st.exception(e)
 
-def vertical_divider():
-    st.markdown(
-        """
-        <div style="border-left: 1px solid #ccc; height: 15px; margin: 10px auto;"></div>
-        """,
-        unsafe_allow_html=True
-    )
-
 
 def render_result():
     result = st.session_state.result
@@ -133,13 +125,11 @@ def render_result():
             if result.get("circuit"):
                 st.pyplot(result["circuit"])
 
-        vertical_divider()
         with st.container():
             st.subheader("Bloch Sphere")
             if result.get("bloch"):
                 st.pyplot(result["bloch"])
 
-        vertical_divider()
         with st.container():
             st.subheader("Histogram")
             if result.get("counts"):
