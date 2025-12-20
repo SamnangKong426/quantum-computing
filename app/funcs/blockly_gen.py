@@ -770,6 +770,14 @@ def blockly_ui():
       const workspace = Blockly.inject("blocklyDiv", {{
         theme: Blockly.Themes.Modern,
         toolbox: document.getElementById("toolbox-categories"),
+        zoom:
+         {{controls: true,
+          wheel: true,
+          startScale: 1.0,
+          maxScale: 3,
+          minScale: 1,
+          scaleSpeed: 1.2,
+          pinch: true}},
         trashcan: true,
       }});
 

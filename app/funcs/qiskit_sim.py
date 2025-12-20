@@ -10,11 +10,14 @@ from qiskit_aer import AerSimulator
 from rope.base.project import Project
 from rope.refactor.importutils import ImportOrganizer
 
-if "counts_df" not in st.session_state:
-    st.session_state.counts_df = pd.DataFrame(columns=["State", "Counts"])
+CARD_HEIGHT = 450
 
-if "result" not in st.session_state:
-    st.session_state.result = {}
+def init_session_state():
+    if "code" not in st.session_state:
+        st.session_state.code = ""
+
+    if "result" not in st.session_state:
+        st.session_state.result = {}
 
 
 def fix_imports(code_str: str) -> str:
@@ -127,13 +130,11 @@ def render_result():
     """Render circuit, histogram, bloch sphere, and stdout with mobile support."""
     result = st.session_state.result
 
-    if result["type"] != "success":
+    if result and result["type"] != "success":
         st.error("Error: " + result["data"])
         return
 
-    CARD_HEIGHT = 450
-
-    cols = st.columns(3, border=True)
+    cols = st.columns(3, border=True, vertical_alignment="center")
 
     # Circuit
     with cols[0]:
