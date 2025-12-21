@@ -1,0 +1,16 @@
+{
+  "name": "QuantumEdu",
+  "short_name": "QE",
+  "description": "Your QuantumEdu Simulator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6200ee",
+  "icons": [
+    {
+      "src": "static/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

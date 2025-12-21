@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Quantum Circuit Blockly</title>
+    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+    <style>
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        /* margin: 0; */
+        /* padding: 0; */
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+      }
+      #blocklyDiv {
+        height: 70%;
+        width: 100%;
+      }
+      #codeDiv {
+        height: 30%;
+        width: 100%;
+        border-top: 1px solid #ccc;
+        padding: 10px;
+        font-family: monospace;
+        background: #f9f9f9;
+        overflow: auto;
+        white-space: pre;
+      }
+      button {
+        margin: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <button onclick="generateCode()">Generate Python Code</button>
+    </div>
+
+    <div id="blocklyDiv"></div>
+    <div id="codeDiv"></div>
+
+    <xml id="toolbox" style="display: none">
+      <category name="Qubits" colour="160">
+        <block type="quantum_circuit"></block>
+      </category>
+
+      <category name="Gates" colour="230">
+        <category name="Single-Qubit Gates" colour="210">
+          <block type="apply_gate"><field name="GATE">H</field></block>
+        </category>
+        <category name="Multi-Qubit Gates" colour="190">
+          <block type="apply_gate"><field name="GATE">CNOT</field></block>
+          <block type="apply_gate"><field name="GATE">CZ</field></block>
+          <block type="apply_gate"><field name="GATE">SWAP</field></block>
+        </category>
+      </category>
+
+      <category name="Measurement" colour="120">
+        <block type="measure_qubit"></block>
+      </category>
+
+      <category name="Extras" colour="60">
+        <block type="reset_qubit"></block>
+        <block type="barrier"></block>
+        <block type="conditional_gate"></block>
+        <block type="run_circuit"></block>
+      </category>
+
+      <category name="Views" colour="100">
+        <block type="draw_mpl"></block>
+      </category>
+    </xml>
+
+    <script>
+      // ------------------ BLOCK DEFINITIONS ------------------
+
+      Blockly.Blocks["quantum_circuit"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("Circuit")
+            .appendField(new Blockly.FieldNumber(2, 1), "QUBITS")
+            .appendField("q,")
+            .appendField(new Blockly.FieldNumber(2, 0), "CLASSICAL_BITS")
+            .appendField("c");
+          this.setPreviousStatement(false, null);
+          this.setNextStatement(true, null);
+          this.setColour(160);
+        },
+      };
+
+      Blockly.Blocks["apply_gate"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("apply")
+            .appendField(
+              new Blockly.FieldDropdown([
+                ["H", "H"],
+                ["X", "X"],
+                ["Y", "Y"],
+                ["Z", "Z"],
+                ["S", "S"],
+                ["T", "T"],
+                ["CNOT", "CNOT"],
+                ["CZ", "CZ"],
+                ["SWAP", "SWAP"],
+              ]),
+              "GATE"
+            )
+            .appendField("on")
+            .appendField(new Blockly.FieldTextInput("q0"), "QUBIT");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(230);
+        },
+      };
+
+      Blockly.Blocks["measure_qubit"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("measure qubit")
+            .appendField(new Blockly.FieldTextInput("q0"), "QUBIT")
+            .appendField("into classical bit")
+            .appendField(new Blockly.FieldTextInput("c0"), "CBIT");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(120);
+        },
+      };
+
+      Blockly.Blocks["reset_qubit"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("reset qubit")
+            .appendField(new Blockly.FieldTextInput("q0"), "QUBIT");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(120);
+        },
+      };
+
+      Blockly.Blocks["barrier"] = {
+        init: function () {
+          this.appendDummyInput().appendField("barrier");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(60);
+        },
+      };
+
+      Blockly.Blocks["conditional_gate"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("if")
+            .appendField(new Blockly.FieldTextInput("c0==1"), "COND")
+            .appendField("then apply")
+            .appendField(
+              new Blockly.FieldDropdown([
+                ["X", "X"],
+                ["Y", "Y"],
+                ["Z", "Z"],
+                ["H", "H"],
+              ]),
+              "GATE"
+            )
+            .appendField("on")
+            .appendField(new Blockly.FieldTextInput("q1"), "QUBIT");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(60);
+        },
+      };
+
+      Blockly.Blocks["run_circuit"] = {
+        init: function () {
+          this.appendDummyInput()
+            .appendField("run circuit on")
+            .appendField(
+              new Blockly.FieldDropdown([
+                ["simulator", "simulator"],
+                ["real device", "real"],
+              ]),
+              "BACKEND"
+            );
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour(20);
+        },
+      };
+
+      Blockly.Blocks["draw_mpl"] = {
+        init: function () {
+          this.appendDummyInput().appendField("view circuit");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(false, null);
+          this.setColour(20);
+        },
+      };
+
+      // ------------------ PYTHON GENERATORS (your style) ------------------
+      python.pythonGenerator.forBlock["quantum_circuit"] = function (block) {
+        var q = block.getFieldValue("QUBITS");
+        var c = block.getFieldValue("CLASSICAL_BITS");
+        return `from qiskit import QuantumCircuit\nqc = QuantumCircuit(${q}, ${c})\n`;
+      };
+
+      python.pythonGenerator.forBlock["apply_gate"] = function (block) {
+        var gate = block.getFieldValue("GATE");
+        var qubit = block.getFieldValue("QUBIT");
+        if (["CNOT", "CZ", "SWAP"].includes(gate)) {
+          var qubits = qubit.split(",");
+          return `qc.${gate.toLowerCase()}(${qubits.join(",")})\n`;
+        }
+        return `qc.${gate.toLowerCase()}(${qubit})\n`;
+      };
+
+      python.pythonGenerator.forBlock["measure_qubit"] = function (block) {
+        var q = block.getFieldValue("QUBIT");
+        var c = block.getFieldValue("CBIT");
+        return `qc.measure(${q}, ${c})\n`;
+      };
+
+      python.pythonGenerator.forBlock["reset_qubit"] = function (block) {
+        var q = block.getFieldValue("QUBIT");
+        return `qc.reset(${q})\n`;
+      };
+
+      python.pythonGenerator.forBlock["barrier"] = function () {
+        return `qc.barrier()\n`;
+      };
+
+      python.pythonGenerator.forBlock["conditional_gate"] = function (block) {
+        var cond = block.getFieldValue("COND");
+        var gate = block.getFieldValue("GATE");
+        var q = block.getFieldValue("QUBIT");
+        return `if ${cond}:\n    qc.${gate.toLowerCase()}(${q})\n`;
+      };
+
+      python.pythonGenerator.forBlock["run_circuit"] = function (block) {
+        var backend = block.getFieldValue("BACKEND");
+        if (backend === "simulator") {
+          return `from qiskit import Aer, execute\nbackend = Aer.get_backend('qasm_simulator')\nresult = execute(qc, backend).result()\nprint(result.get_counts(qc))\n`;
+        } else {
+          return `# Replace 'your_backend' with a real IBMQ device\nfrom qiskit import IBMQ, execute\nIBMQ.load_account()\nbackend = IBMQ.get_backend('your_backend')\nresult = execute(qc, backend).result()\nprint(result.get_counts(qc))\n`;
+        }
+      };
+
+      python.pythonGenerator.forBlock["draw_mpl"] = function (block) {
+        return `qc.draw("mpl")\n`;
+      };
+
+      // ------------------ INJECT WORKSPACE ------------------
+
+      var workspace = Blockly.inject("blocklyDiv", {
+        toolbox: document.getElementById("toolbox"),
+        zoom: {
+          controls: true,
+          wheel: true,
+          startScale: 1.0,
+          maxScale: 3,
+          minScale: 0.5,
+          scaleSpeed: 1.2,
+          pinch: true,
+        },
+        trashcan: true,
+        move: {
+          scrollbars: {
+            horizontal: true,
+            vertical: true,
+          },
+          drag: true,
+          wheel: false,
+        },
+      });
+
+      function generateCode() {
+        const code = Blockly.Python.workspaceToCode(workspace);
+        document.getElementById("codeDiv").textContent = code;
+        const newUrl =
+          "http://localhost:8501/?codeContent=" + encodeURIComponent(code);
+        window.open(newUrl, target="_blank");
+      }
+    </script>
+  </body>
+</html>
