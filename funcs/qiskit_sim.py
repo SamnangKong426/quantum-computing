@@ -79,7 +79,12 @@ def sync_url_params():
 
 
 def qiskit_sim():
-    code = fix_imports(st.session_state.code)
+    try:
+        code = fix_imports(st.session_state.code)
+    except Exception as e:
+        st.toast(f"**Block Error:** Please correct your input!", icon="🚨")
+        code = ""
+    
     with st.container(height=600, border=False):
         with st.container(horizontal=True):
             st.subheader("Qiskit Python Generation")
@@ -87,9 +92,9 @@ def qiskit_sim():
                 st.download_button(
                     label="Download",
                     file_name="quantum_edu.py",
-                    data=code,
+                    data=code if code else "",
                     mime="text/x-python",
-                    disabled=not st.session_state.code,
+                    disabled=not code,
                     width="stretch",
                 )
                 button = st.empty()
